@@ -80,8 +80,7 @@ npm start
 npm run dev
 ```
 
-The backend will run on `http://localhost:8000`
-
+The backend will run on https://resumeiq-nkqc.onrender.com
 ### Frontend Setup
 
 1. Navigate to the frontend directory:
