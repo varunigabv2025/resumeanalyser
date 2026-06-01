@@ -11,7 +11,12 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://resume-iq-jade-nu.vercel.app'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Multer configuration for file uploads
