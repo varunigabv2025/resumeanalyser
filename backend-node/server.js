@@ -84,9 +84,6 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
     const candidateName = extractCandidateName(resumeText);
     const jobTitle = extractJobTitle(job_description);
     
-    // Run all AI analyses
-    const analysisResults = await runAllAnalyses(resumeText, job_description, candidateName);
-
     // Optional GitHub Profile Analysis
     let githubAnalysis = null;
     if (github_url && typeof github_url === 'string' && github_url.trim()) {
@@ -94,13 +91,16 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
       if (username) {
         try {
           console.log(`[server.js] Analyzing GitHub profile for username: ${username}...`);
-          githubAnalysis = await analyzeGithubProfile(username, analysisResults.core_match?.matched_skills || []);
+          githubAnalysis = await analyzeGithubProfile(username, []);
         } catch (ghErr) {
           console.warn('[server.js] GitHub profile analysis skipped:', ghErr.message);
         }
       }
     }
-    
+
+    // Run all AI analyses
+    const analysisResults = await runAllAnalyses(resumeText, job_description, candidateName, githubAnalysis);
+
     // Calculate Multi-Dimensional Trust Score & SkillSwap Matches
     const matchedSkills = analysisResults.core_match?.matched_skills || [];
     const missingSkills = analysisResults.core_match?.missing_skills || [];
@@ -122,8 +122,9 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
         keyword_gaps, summary, ats_score, parsing_issues, detected_sections,
         missing_sections, keyword_density, formatting_warnings, ats_verdict,
         rewrites, readiness_percentage, gap_summary, skill_gaps, milestones,
-        subject_line, cover_letter, highlights_used, tone, trust_score, skill_swap
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        subject_line, cover_letter, highlights_used, tone, trust_score, skill_swap,
+        interview_prep
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const values = [
@@ -157,7 +158,8 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
       JSON.stringify(analysisResults.cover_letter?.highlights_used || []),
       analysisResults.cover_letter?.tone || '',
       JSON.stringify(trustScoreResult),
-      JSON.stringify(skillSwapMatches)
+      JSON.stringify(skillSwapMatches),
+      JSON.stringify(analysisResults.interview_prep || {})
     ];
     
     db.run(insertQuery, values, function(err) {
@@ -230,8 +232,10 @@ app.get('/api/history/:id', (req, res) => {
 
     let parsedTrust = {};
     let parsedSkillSwap = [];
+    let parsedInterviewPrep = {};
     try { parsedTrust = JSON.parse(row.trust_score || '{}'); } catch (e) {}
     try { parsedSkillSwap = JSON.parse(row.skill_swap || '[]'); } catch (e) {}
+    try { parsedInterviewPrep = JSON.parse(row.interview_prep || '{}'); } catch (e) {}
 
     const analysis = {
       id: row.id,
@@ -239,6 +243,7 @@ app.get('/api/history/:id', (req, res) => {
       job_title: row.job_title,
       trust_score: parsedTrust,
       skill_swap: parsedSkillSwap,
+      interview_prep: parsedInterviewPrep,
 
       core_match: {
         overall_score: row.overall_score,

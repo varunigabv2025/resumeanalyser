@@ -130,7 +130,7 @@ function fallbackGaps(resumeText, jobDescription) {
     priority: "High",
     estimated_time: "2 - 3 weeks",
     resources: [
-      { name: `${skill} Official Documentation & Tutorials`, url: `https://google.com/search?q=${encodeURIComponent(skill + ' documentation')}` },
+      { name: `${skill} Official Documentation & Guides`, url: `https://google.com/search?q=${encodeURIComponent(skill + ' documentation')}` },
       { name: `Mastering ${skill} Hands-on Course`, url: `https://coursera.org/search?query=${encodeURIComponent(skill)}` }
     ]
   }));
@@ -141,6 +141,21 @@ function fallbackGaps(resumeText, jobDescription) {
     readiness_percentage: readiness,
     gap_summary: `Identified ${missing.length} skill gaps required for target position readiness.`,
     skill_gaps: skillGaps,
+    weekly_milestones: [
+      { week: 1, title: "Foundations & Syntax", description: `Master syntax and core concepts of ${missing[0] || 'target tech'}.` },
+      { week: 2, title: "Architecture & Integration", description: `Build small services integrating ${missing[0] || 'target tech'} with existing stack.` },
+      { week: 3, title: "System Design & Testing", description: `Implement comprehensive unit tests and optimize system performance.` },
+      { week: 4, title: "Production Deployment", description: `Deploy full-stack project to cloud environment with CI/CD pipeline.` }
+    ],
+    certifications: [
+      { name: `Certified ${missing[0] || 'Cloud'} Developer`, provider: "AWS / Industry Accredited" },
+      { name: `Professional ${missing[1] || 'DevOps'} Specialist`, provider: "Linux Foundation" }
+    ],
+    portfolio_projects: [
+      { title: `Full-Stack ${missing[0] || 'Cloud'} Microservice`, description: `Build a resilient microservice architecture utilizing ${missing.join(' and ')}.`, tech_stack: missing },
+      { title: `Real-time Analytics Dashboard`, description: `Implement dynamic metrics telemetry with high-throughput streaming.`, tech_stack: [missing[0] || 'Node.js', 'WebSockets'] }
+    ],
+    timeline: "4 - 6 Weeks Dedicated Upskilling",
     milestones: [
       { label: "Core Foundation & Syntax", percentage: 25 },
       { label: "Hands-on Project Building", percentage: 50 },
@@ -150,15 +165,58 @@ function fallbackGaps(resumeText, jobDescription) {
   };
 }
 
-function fallbackCoverLetter(resumeText, jobDescription, candidateName = "Candidate") {
+function fallbackCoverLetter(resumeText, jobDescription, candidateName = "Candidate", githubAnalysis = null) {
   const core = fallbackCoreMatch(resumeText, jobDescription);
   const highlights = core.matched_skills.slice(0, 3);
+  const githubText = githubAnalysis?.username 
+    ? ` On GitHub (@${githubAnalysis.username}), I maintain ${githubAnalysis.repoCount || 'multiple'} repositories featuring ${githubAnalysis.languages?.slice(0, 3).join(', ') || 'modern stacks'}.`
+    : '';
 
   return {
-    subject_line: `Application for Software Position - ${candidateName}`,
-    cover_letter: `Dear Hiring Manager,\n\nI am writing to express my strong interest in the Software Engineer position. With hands-on experience in ${highlights.join(', ')}, I am confident in my ability to make an immediate impact on your team.\n\nThroughout my career, I have consistently focused on writing clean, maintainable code, solving complex technical challenges, and collaborating effectively across multi-functional engineering teams. My background aligns closely with your core requirements, particularly in building robust applications and delivering reliable solutions.\n\nI am eager to contribute my skills and technical expertise to your upcoming projects. Thank you for your time and consideration. I look forward to the opportunity to discuss how my experience fits your hiring needs.\n\nSincerely,\n${candidateName}`,
+    subject_line: `Application for Position - ${candidateName}`,
+    cover_letter: `Dear Hiring Manager,\n\nI am writing to express my enthusiastic interest in joining your engineering team. With verified hands-on experience in ${highlights.join(', ')}, I am confident in my capability to contribute immediate value to your ongoing initiatives.${githubText}\n\nThroughout my career, I have consistently focused on building scalable software solutions, optimizing application performance, and enforcing software craftsmanship. My technical background aligns strongly with the requirements outlined in your job posting.\n\nI welcome the opportunity to discuss how my skill set and code background can support your team's objectives. Thank you for your time and consideration.\n\nSincerely,\n${candidateName}`,
     highlights_used: highlights,
     tone: "Professional & Impactful"
+  };
+}
+
+function fallbackInterviewPrep(resumeText, jobDescription, candidateName = "Candidate") {
+  const core = fallbackCoreMatch(resumeText, jobDescription);
+  const matched = core.matched_skills || ["JavaScript", "React", "Node.js"];
+  const missing = core.missing_skills || ["Docker", "AWS"];
+
+  return {
+    technical_questions: [
+      {
+        question: `How have you structured production architectures using ${matched[0] || 'JavaScript'}?`,
+        answer: `Explain your experience with ${matched[0] || 'JavaScript'}, detailing architectural patterns, state management, and memory/latency optimizations.`,
+        topic: matched[0] || 'Core Stack'
+      },
+      {
+        question: `How will you bridge your skill gap in ${missing[0] || 'Docker'} when joining this project?`,
+        answer: `Demonstrate proactive learning by explaining container concepts, image optimization, and local orchestration workflows.`,
+        topic: missing[0] || 'Skill Gap'
+      }
+    ],
+    coding_questions: [
+      {
+        question: `Design and implement an in-memory Cache with TTL eviction or a Rate Limiter middleware.`,
+        solution_approach: `Utilize a HashMap paired with a Doubly Linked List (LRU) or Sliding Window Counter to achieve O(1) lookup and eviction.`,
+        complexity: "O(1) Time, O(N) Space"
+      }
+    ],
+    behavioral_questions: [
+      {
+        question: `Describe a situation where a project deadline was at risk and how you responded.`,
+        star_framework_guide: `Situation: Imminent release deadline. Task: Unblock critical dependencies. Action: Prioritized core MVP requirements and led pair-programming sessions. Result: On-time delivery with zero critical bugs.`
+      }
+    ],
+    project_discussion: [
+      {
+        question: `Walk through the system design of a major project listed on your resume or GitHub.`,
+        talking_points: `Focus on component boundaries, API design (REST/GraphQL), database indexing strategy, and failure handling.`
+      }
+    ]
   };
 }
 
@@ -240,7 +298,7 @@ async function rewriteBullets(resumeText, jobDescription) {
 async function analyzeGaps(resumeText, jobDescription) {
   try {
     return await callAI(
-      `You are a career coach. Return ONLY JSON: {"readiness_percentage": 75, "gap_summary": "", "skill_gaps": [{"skill": "", "priority": "High", "estimated_time": "", "resources": [{"name": "", "url": ""}]}], "milestones": [{"label": "", "percentage": 25}]}`,
+      `You are a career coach. Return ONLY JSON: {"readiness_percentage": 75, "gap_summary": "", "skill_gaps": [{"skill": "", "priority": "High", "estimated_time": "", "resources": [{"name": "", "url": ""}]}], "weekly_milestones": [{"week": 1, "title": "", "description": ""}], "certifications": [{"name": "", "provider": ""}], "portfolio_projects": [{"title": "", "description": "", "tech_stack": []}], "timeline": "4 - 6 Weeks", "milestones": [{"label": "", "percentage": 25}]}`,
       `RESUME:\n${resumeText}\n\nJOB DESCRIPTION:\n${jobDescription}`
     );
   } catch (e) {
@@ -248,24 +306,36 @@ async function analyzeGaps(resumeText, jobDescription) {
   }
 }
 
-async function generateCoverLetter(resumeText, jobDescription, candidateName = "Candidate") {
+async function generateCoverLetter(resumeText, jobDescription, candidateName = "Candidate", githubAnalysis = null) {
   try {
     return await callAI(
       `You are a cover letter writer. Return ONLY JSON: {"subject_line": "", "cover_letter": "", "highlights_used": [], "tone": "Professional"}`,
       `CANDIDATE: ${candidateName}\nRESUME:\n${resumeText}\nJOB:\n${jobDescription}`
     );
   } catch (e) {
-    return fallbackCoverLetter(resumeText, jobDescription, candidateName);
+    return fallbackCoverLetter(resumeText, jobDescription, candidateName, githubAnalysis);
   }
 }
 
-async function runAllAnalyses(resumeText, jobDescription, candidateName = 'Candidate') {
+async function generateInterviewPrep(resumeText, jobDescription, candidateName = "Candidate", githubAnalysis = null) {
+  try {
+    return await callAI(
+      `You are an expert technical interviewer. Return ONLY JSON: {"technical_questions": [{"question": "", "answer": "", "topic": ""}], "coding_questions": [{"question": "", "solution_approach": "", "complexity": ""}], "behavioral_questions": [{"question": "", "star_framework_guide": ""}], "project_discussion": [{"question": "", "talking_points": ""}]}`,
+      `CANDIDATE: ${candidateName}\nRESUME:\n${resumeText}\nJOB:\n${jobDescription}`
+    );
+  } catch (e) {
+    return fallbackInterviewPrep(resumeText, jobDescription, candidateName);
+  }
+}
+
+async function runAllAnalyses(resumeText, jobDescription, candidateName = 'Candidate', githubAnalysis = null) {
   const results = await Promise.allSettled([
     analyzeCoreMatch(resumeText, jobDescription),
     simulateATS(resumeText, jobDescription),
     rewriteBullets(resumeText, jobDescription),
     analyzeGaps(resumeText, jobDescription),
-    generateCoverLetter(resumeText, jobDescription, candidateName)
+    generateCoverLetter(resumeText, jobDescription, candidateName, githubAnalysis),
+    generateInterviewPrep(resumeText, jobDescription, candidateName, githubAnalysis)
   ]);
 
   return {
@@ -273,7 +343,8 @@ async function runAllAnalyses(resumeText, jobDescription, candidateName = 'Candi
     ats: results[1].status === "fulfilled" ? results[1].value : fallbackATS(resumeText, jobDescription),
     rewrites: results[2].status === "fulfilled" ? results[2].value : fallbackRewrites(resumeText),
     gaps: results[3].status === "fulfilled" ? results[3].value : fallbackGaps(resumeText, jobDescription),
-    cover_letter: results[4].status === "fulfilled" ? results[4].value : fallbackCoverLetter(resumeText, jobDescription, candidateName)
+    cover_letter: results[4].status === "fulfilled" ? results[4].value : fallbackCoverLetter(resumeText, jobDescription, candidateName, githubAnalysis),
+    interview_prep: results[5].status === "fulfilled" ? results[5].value : fallbackInterviewPrep(resumeText, jobDescription, candidateName)
   };
 }
 

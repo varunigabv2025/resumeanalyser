@@ -42,13 +42,21 @@ function initDb() {
       subject_line TEXT,
       cover_letter TEXT,
       highlights_used TEXT,
-      tone TEXT
+      tone TEXT,
+      trust_score TEXT,
+      skill_swap TEXT,
+      interview_prep TEXT
     )
   `, (err) => {
     if (err) {
       console.error('Error creating table:', err);
     }
   });
+
+  // Ensure columns exist on existing databases
+  db.run(`ALTER TABLE resume_analyses ADD COLUMN trust_score TEXT`, () => {});
+  db.run(`ALTER TABLE resume_analyses ADD COLUMN skill_swap TEXT`, () => {});
+  db.run(`ALTER TABLE resume_analyses ADD COLUMN interview_prep TEXT`, () => {});
 }
 
 module.exports = db;
