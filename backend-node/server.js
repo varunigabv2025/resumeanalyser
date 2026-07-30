@@ -6,6 +6,7 @@ const multer = require('multer');
 const db = require('./database');
 const { extractResumeText } = require('./resumeParser');
 const { runAllAnalyses } = require('./aiAnalyzer');
+const { analyzeGithubProfile } = require('./githubAnalyzer');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -235,6 +236,24 @@ app.get('/api/history/:id', (req, res) => {
     
     res.json(analysis);
   });
+});
+
+// POST /api/github/analyze
+app.post('/api/github/analyze', async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    const result = await analyzeGithubProfile(username);
+
+    if (result.error) {
+      return res.status(result.status || 400).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('GitHub analysis error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Start server
