@@ -7,6 +7,8 @@ const db = require('./database');
 const { extractResumeText } = require('./resumeParser');
 const { runAllAnalyses } = require('./aiAnalyzer');
 const { analyzeGithubProfile } = require('./githubAnalyzer');
+const { calculateTrustScore } = require('./trustScore');
+const { findMatchesForCandidate } = require('./skillMatcher');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -99,6 +101,14 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
       }
     }
     
+    // Calculate Trust Score & SkillSwap Matches
+    const matchedSkills = analysisResults.core_match?.matched_skills || [];
+    const missingSkills = analysisResults.core_match?.missing_skills || [];
+    const githubSkills = githubAnalysis?.skills || [];
+
+    const trustScoreResult = calculateTrustScore(matchedSkills, githubSkills);
+    const skillSwapMatches = findMatchesForCandidate(matchedSkills, missingSkills, candidateName);
+
     // Save to database
     const insertQuery = `
       INSERT INTO resume_analyses (
@@ -107,8 +117,8 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
         keyword_gaps, summary, ats_score, parsing_issues, detected_sections,
         missing_sections, keyword_density, formatting_warnings, ats_verdict,
         rewrites, readiness_percentage, gap_summary, skill_gaps, milestones,
-        subject_line, cover_letter, highlights_used, tone
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+        subject_line, cover_letter, highlights_used, tone, trust_score, skill_swap
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const values = [
@@ -140,7 +150,9 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
       analysisResults.cover_letter?.subject_line || '',
       analysisResults.cover_letter?.cover_letter || '',
       JSON.stringify(analysisResults.cover_letter?.highlights_used || []),
-      analysisResults.cover_letter?.tone || ''
+      analysisResults.cover_letter?.tone || '',
+      JSON.stringify(trustScoreResult),
+      JSON.stringify(skillSwapMatches)
     ];
     
     db.run(insertQuery, values, function(err) {
@@ -154,9 +166,11 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
         created_at: new Date().toISOString(),
         job_title: jobTitle,
         github_analysis: githubAnalysis,
+        trust_score: trustScoreResult,
+        skill_swap: skillSwapMatches,
         ...analysisResults
       };
-      console.log("FINAL RESPONSE:");
+      console.log("FINAL RESPONSE INCLUDING TRUST SCORE & SKILLSWAP:");
       console.log(JSON.stringify(response, null, 2));
       
       res.json(response);
@@ -208,10 +222,18 @@ app.get('/api/history/:id', (req, res) => {
     if (!row) {
       return res.status(404).json({ error: 'Analysis not found' });
     }
+
+    let parsedTrust = {};
+    let parsedSkillSwap = [];
+    try { parsedTrust = JSON.parse(row.trust_score || '{}'); } catch (e) {}
+    try { parsedSkillSwap = JSON.parse(row.skill_swap || '[]'); } catch (e) {}
+
     const analysis = {
       id: row.id,
       created_at: row.created_at,
       job_title: row.job_title,
+      trust_score: parsedTrust,
+      skill_swap: parsedSkillSwap,
 
       core_match: {
         overall_score: row.overall_score,
