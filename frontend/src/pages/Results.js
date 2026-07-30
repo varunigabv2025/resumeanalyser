@@ -66,7 +66,7 @@ const Results = () => {
     tone: ''
   };
 
-  const unifiedProfile = mergeProfile ? mergeProfile(result, {
+  const unifiedProfile = typeof mergeProfile === 'function' ? mergeProfile(result, {
     skills: ["React", "Node.js", "Express", "PostgreSQL", "Docker", "Git"],
     username: "candidate-dev"
   }) : { verifiedSkills: [], unverifiedClaims: [], resumeRecommendations: [] };
@@ -82,14 +82,15 @@ const Results = () => {
 
   const handleCopyAllRewrites = () => {
     const allRewrites = rewrites.rewrites
-      .map(r => r.improved)
-      .join('\n');
+      ?.map(r => r.improved)
+      ?.join('\n') || '';
     navigator.clipboard.writeText(allRewrites);
     toast.success('All improved bullet rewrites copied to clipboard!');
   };
 
   const renderOverview = () => (
     <div className="space-y-8 fade-in">
+      {/* Overall Score Ring */}
       <div className="glass-card p-8 rounded-3xl border border-white/10 text-center relative overflow-hidden">
         <h2 className="text-xl font-heading font-bold text-slate-300 mb-6 flex items-center justify-center space-x-2">
           <Sparkles className="w-5 h-5 text-cyan-400" />
@@ -119,12 +120,16 @@ const Results = () => {
           </div>
         </div>
       </div>
+
+      {/* Section Scores Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <ScoreCard title="Skills Match" score={coreMatch?.section_scores?.skills || 0} color="cyan" />
         <ScoreCard title="Experience Match" score={coreMatch?.section_scores?.experience || 0} color="green" />
         <ScoreCard title="Education Score" score={coreMatch?.section_scores?.education || 0} color="yellow" />
         <ScoreCard title="Keywords Alignment" score={coreMatch?.section_scores?.keywords || 0} color="indigo" />
       </div>
+
+      {/* AI Evaluation Summary */}
       <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10">
         <h3 className="text-lg font-heading font-bold text-white mb-3 flex items-center space-x-2">
           <Terminal className="w-5 h-5 text-purple-400" />
@@ -132,6 +137,8 @@ const Results = () => {
         </h3>
         <p className="text-slate-300 font-sans leading-relaxed text-sm sm:text-base">{coreMatch?.summary || "No summary available."}</p>
       </div>
+
+      {/* Matched & Missing Skills Grid */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="glass-card p-6 rounded-3xl border border-emerald-500/20">
           <h3 className="text-base font-heading font-bold mb-4 text-emerald-400 flex items-center space-x-2">
@@ -139,16 +146,21 @@ const Results = () => {
             <span>Matched Resume Skills ({coreMatch?.matched_skills?.length || 0})</span>
           </h3>
           <div className="flex flex-wrap gap-2">
-            {coreMatch?.matched_skills?.map((skill, index) => <SkillBadge key={index} skill={skill} type="matched" />)}
+            {coreMatch?.matched_skills?.map((skill, index) => (
+              <SkillBadge key={index} skill={skill} type="matched" />
+            ))}
           </div>
         </div>
+
         <div className="glass-card p-6 rounded-3xl border border-rose-500/20">
           <h3 className="text-base font-heading font-bold mb-4 text-rose-400 flex items-center space-x-2">
             <AlertTriangle className="w-5 h-5" />
             <span>Missing Target Skills ({coreMatch?.missing_skills?.length || 0})</span>
           </h3>
           <div className="flex flex-wrap gap-2">
-            {coreMatch?.missing_skills?.map((skill, index) => <SkillBadge key={index} skill={skill} type="missing" />)}
+            {coreMatch?.missing_skills?.map((skill, index) => (
+              <SkillBadge key={index} skill={skill} type="missing" />
+            ))}
           </div>
         </div>
       </div>
@@ -165,28 +177,44 @@ const Results = () => {
             <p className="text-xs font-mono text-cyan-300/80">Aggregated resume analysis & GitHub code evidence</p>
           </div>
         </div>
+
+        {/* Verified Skills */}
         <div className="mb-6">
           <h3 className="text-sm font-mono uppercase text-emerald-400 font-bold mb-3 flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Verified Skills</span>
+            <span>Verified Skills (Code Evidence Verified on GitHub)</span>
           </h3>
           <div className="flex flex-wrap gap-2">
             {unifiedProfile.verifiedSkills?.length > 0 ? (
-              unifiedProfile.verifiedSkills.map((v, i) => <SkillBadge key={i} skill={v.skill} type="verified" evidence={v.evidence} />)
-            ) : <p className="text-xs font-mono text-slate-400">No verified code claims found.</p>}
+              unifiedProfile.verifiedSkills.map((v, i) => (
+                <SkillBadge key={i} skill={v.skill} type="verified" evidence={v.evidence} />
+              ))
+            ) : (
+              <p className="text-xs font-mono text-slate-400">No verified code claims found.</p>
+            )}
           </div>
         </div>
+
+        {/* Unverified Resume Claims */}
         <div className="mb-6">
           <h3 className="text-sm font-mono uppercase text-amber-400 font-bold mb-3 flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4" />
             <span>Unverified Resume Claims</span>
           </h3>
           <div className="flex flex-wrap gap-2">
-            {unifiedProfile.unverifiedClaims?.map((claim, i) => (
-              <span key={i} className="px-3 py-1 rounded-full text-xs font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">⚠️ {claim}</span>
-            ))}
+            {unifiedProfile.unverifiedClaims?.length > 0 ? (
+              unifiedProfile.unverifiedClaims.map((claim, i) => (
+                <span key={i} className="px-3 py-1 rounded-full text-xs font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  ⚠️ {claim}
+                </span>
+              ))
+            ) : (
+              <p className="text-xs font-mono text-slate-400">All resume claims verified.</p>
+            )}
           </div>
         </div>
+
+        {/* Resume Recommendations */}
         <div>
           <h3 className="text-sm font-mono uppercase text-cyan-400 font-bold mb-3 flex items-center space-x-2">
             <Sparkles className="w-4 h-4" />
@@ -213,19 +241,30 @@ const Results = () => {
             <h2 className="text-2xl font-heading font-bold text-white">ATS Compatibility Audit</h2>
             <p className="text-xs font-mono text-slate-400">Automated Screening Filter Simulation</p>
           </div>
-          <span className={`px-4 py-2 rounded-full font-mono text-xs font-bold border shrink-0 ${ats.ats_verdict?.includes('Pass') ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_-3px_rgba(16,185,129,0.4)]' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'}`}>
-            {ats.ats_verdict}
+          <span className={`px-4 py-2 rounded-full font-mono text-xs font-bold border shrink-0 ${
+            ats.ats_verdict?.includes('Pass')
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_-3px_rgba(16,185,129,0.4)]'
+              : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+          }`}>
+            {ats.ats_verdict || 'Audit Completed'}
           </span>
         </div>
+
+        {/* ATS Progress Bar */}
         <div className="space-y-2 mb-8">
           <div className="w-full h-4 bg-space-950 rounded-full p-0.5 border border-white/10 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all duration-700 shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]" style={{ width: `${ats.ats_score}%` }} />
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all duration-700 shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]"
+              style={{ width: `${ats.ats_score || 0}%` }}
+            />
           </div>
           <div className="flex justify-between text-xs font-mono text-slate-400">
             <span>ATS Compatibility Index</span>
-            <span className="text-cyan-400 font-bold">{Math.round(ats.ats_score)}%</span>
+            <span className="text-cyan-400 font-bold">{Math.round(ats.ats_score || 0)}%</span>
           </div>
         </div>
+
+        {/* Section Checks Grid */}
         <div className="grid md:grid-cols-2 gap-6">
           <div className="p-5 rounded-2xl bg-space-950/80 border border-white/10">
             <h3 className="font-heading font-bold text-white text-base mb-3">Detected Resume Sections</h3>
@@ -238,6 +277,67 @@ const Results = () => {
               ))}
             </ul>
           </div>
+
+          {ats.missing_sections?.length > 0 && (
+            <div className="p-5 rounded-2xl bg-space-950/80 border border-amber-500/20">
+              <h3 className="font-heading font-bold text-amber-400 text-base mb-3">Missing Resume Sections</h3>
+              <ul className="space-y-2">
+                {ats.missing_sections.map((sec, i) => (
+                  <li key={i} className="flex items-center text-xs font-mono text-amber-300">
+                    <span className="mr-2">⚠️</span>
+                    {sec}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Keyword Density Table */}
+        <div className="mt-8 pt-6 border-t border-white/10">
+          <h3 className="font-heading font-bold text-white text-base mb-4">ATS Keyword Density Matrix</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-400">
+                  <th className="pb-3 pr-4">High Match Keywords</th>
+                  <th className="pb-3 pr-4">Partial Match</th>
+                  <th className="pb-3">Missing Keywords</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                <tr>
+                  <td className="py-3 pr-4 align-top">
+                    <div className="flex flex-wrap gap-1">
+                      {ats.keyword_density?.high_match?.map((kw, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4 align-top">
+                    <div className="flex flex-wrap gap-1">
+                      {ats.keyword_density?.partial_match?.map((kw, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-3 align-top">
+                    <div className="flex flex-wrap gap-1">
+                      {ats.keyword_density?.missing?.map((kw, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -248,14 +348,20 @@ const Results = () => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-heading font-bold text-white">AI-Optimized Bullet Rewrites</h2>
+          <p className="text-xs font-mono text-slate-400">Action-oriented impact bullet points</p>
         </div>
-        <button onClick={handleCopyAllRewrites} className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-mono text-xs shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] transition-all">
+        <button
+          onClick={handleCopyAllRewrites}
+          className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-mono text-xs shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] transition-all"
+        >
           <Copy className="w-4 h-4" />
           <span>Copy All Rewrites</span>
         </button>
       </div>
       <div className="space-y-4">
-        {rewrites.rewrites?.map((rewrite, index) => <RewriteCard key={index} rewrite={rewrite} />)}
+        {rewrites.rewrites?.map((rewrite, index) => (
+          <RewriteCard key={index} rewrite={rewrite} />
+        ))}
       </div>
     </div>
   );
@@ -264,27 +370,71 @@ const Results = () => {
     <div className="space-y-6 fade-in">
       <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 text-center">
         <h2 className="text-xl font-heading font-bold text-white mb-2">Job Readiness Index</h2>
-        <div className="text-6xl font-heading font-extrabold text-cyan-400 mb-2 glow-text-cyan">{Math.round(gaps.readiness_percentage)}%</div>
+        <div className="text-6xl font-heading font-extrabold text-cyan-400 mb-2 glow-text-cyan">
+          {Math.round(gaps.readiness_percentage || 0)}%
+        </div>
+        <p className="text-sm text-slate-300 max-w-xl mx-auto">{gaps.gap_summary}</p>
       </div>
+
+      {/* Milestones Progress */}
+      {gaps.milestones?.length > 0 && (
+        <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10">
+          <h3 className="font-heading font-bold text-white text-lg mb-4">Upskilling Milestones</h3>
+          <div className="space-y-4">
+            {gaps.milestones.map((milestone, index) => (
+              <div key={index}>
+                <div className="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                  <span>{milestone.label}</span>
+                  <span className="text-cyan-400 font-bold">{milestone.percentage}%</span>
+                </div>
+                <div className="w-full h-2.5 bg-space-950 rounded-full overflow-hidden border border-white/10">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full transition-all duration-500"
+                    style={{ width: `${milestone.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
-        <h3 className="font-heading font-bold text-white text-lg mb-4">Skill Gap Analysis</h3>
-        {gaps.skill_gaps?.map((gap, index) => <RoadmapItem key={index} gap={gap} />)}
+        <h3 className="font-heading font-bold text-white text-lg mb-4">Skill Gap Analysis & Resources</h3>
+        {gaps.skill_gaps?.map((gap, index) => (
+          <RoadmapItem key={index} gap={gap} />
+        ))}
       </div>
     </div>
   );
 
-  const renderCoverLetter = () => <div className="fade-in"><CoverLetterCard coverLetter={coverLetter} /></div>;
+  const renderCoverLetter = () => (
+    <div className="fade-in">
+      <CoverLetterCard coverLetter={coverLetter} />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-space-950 pt-8 pb-20 px-4 relative overflow-hidden">
       {BackgroundEffects && <BackgroundEffects />}
+
       <div className="max-w-6xl mx-auto relative z-10">
-        <div className="flex items-center justify-between mb-8">
-          <button onClick={() => navigate('/')} className="flex items-center space-x-2 px-4 py-2 rounded-xl glass-pill text-slate-300 hover:text-white hover:border-cyan-500/40 transition-all font-mono text-xs">
+        {/* Top Header Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl glass-pill text-slate-300 hover:text-white hover:border-cyan-500/40 transition-all font-mono text-xs w-fit"
+          >
             <ArrowLeft className="w-4 h-4 text-cyan-400" />
             <span>Return to Command Center</span>
           </button>
+
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-white">
+            Analysis Results & Verification Dashboard
+          </h1>
         </div>
+
+        {/* Tab Switcher */}
         <div className="flex space-x-2 glass-card rounded-2xl p-1.5 mb-8 overflow-x-auto border border-white/10">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -293,41 +443,17 @@ const Results = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-xl text-xs font-mono font-semibold transition-all whitespace-nowrap ${isActive ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                className={`flex items-center space-x-2 px-4 py-3 rounded-xl text-xs font-mono font-semibold transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-cyan-400'}`} />
                 <span>{tab.label}</span>
               </button>
             );
           })}
-        </div>
-        <div>
-          {activeTab === 'overview' && renderOverview()}
-          {activeTab === 'unified' && renderUnified()}
-            onClick={() => navigate('/')}
-            className="flex items-center text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back
-          </button>
-          <h1 className="text-3xl font-heading font-bold ml-4">Analysis Results</h1>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex space-x-1 bg-navy-800 rounded-lg p-1 mb-8 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-indigo-500 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
 
         {/* Active Tab Component */}
