@@ -93,6 +93,9 @@ module.exports = {
     verifyProfiles
 };
 
+module.exports.calculateTrustScore = calculateTrustScore;
+module.exports.verifyProfiles = verifyProfiles;
+
 if (require.main === module) {
     verifyProfiles();
 }
