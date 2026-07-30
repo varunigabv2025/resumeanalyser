@@ -17,10 +17,11 @@ export const useAnalyze = () => {
     'Writing tailored cover letter...'
   ];
 
-  const analyze = async (file, jobDescription) => {
+  const analyze = async (file, jobDescription, githubUrl) => {
     console.log('[DEBUG useAnalyze] Starting analyze workflow...');
     console.log('[DEBUG useAnalyze] Selected File:', file?.name, 'Size:', file?.size, 'Type:', file?.type);
     console.log('[DEBUG useAnalyze] Job Description Length:', jobDescription?.length);
+    console.log('[DEBUG useAnalyze] GitHub URL:', githubUrl);
 
     setLoading(true);
     setProgress(5);
@@ -37,7 +38,7 @@ export const useAnalyze = () => {
 
     try {
       console.log('[DEBUG useAnalyze] Triggering analyzeResume API call...');
-      const result = await analyzeResume(file, jobDescription);
+      const result = await analyzeResume(file, jobDescription, githubUrl);
       console.log('[DEBUG useAnalyze] API call returned successfully:', result);
 
       clearInterval(progressInterval);

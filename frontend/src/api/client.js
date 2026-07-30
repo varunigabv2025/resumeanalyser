@@ -6,11 +6,14 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export const analyzeResume = async (file, jobDescription) => {
+export const analyzeResume = async (file, jobDescription, githubUrl) => {
   console.log('[DEBUG client.js] Preparing FormData for /api/analyze...');
   const formData = new FormData();
   formData.append('resume_file', file);
   formData.append('job_description', jobDescription);
+  if (githubUrl && typeof githubUrl === 'string' && githubUrl.trim()) {
+    formData.append('github_url', githubUrl.trim());
+  }
 
   console.log(`[DEBUG client.js] Executing POST request to ${API_BASE_URL}/api/analyze...`);
   const response = await api.post('/api/analyze', formData);
@@ -20,7 +23,8 @@ export const analyzeResume = async (file, jobDescription) => {
 
 export const analyzeGithub = async (githubUrl) => {
   console.log(`[DEBUG client.js] Analyzing GitHub Profile: ${githubUrl}...`);
-  const response = await api.post('/api/github/analyze', { github_url: githubUrl });
+  const username = githubUrl ? githubUrl.split('/').filter(Boolean).pop() : githubUrl;
+  const response = await api.post('/api/github/analyze', { username });
   return response.data;
 };
 

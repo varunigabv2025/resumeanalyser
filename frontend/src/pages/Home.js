@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, CheckCircle2, Target, BookOpen, Mail, Sparkles, Cpu, ShieldCheck, GitBranch, ArrowRight, Zap } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, Target, BookOpen, Mail, Sparkles, Cpu, ShieldCheck, GitBranch, ArrowRight, Zap, Github } from 'lucide-react';
 import { useAnalyze } from '../hooks/useAnalyze';
 import LoadingScreen from '../components/LoadingScreen';
 import BackgroundEffects from '../components/BackgroundEffects';
@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 const Home = () => {
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
   const [showExplorer, setShowExplorer] = useState(false);
 
   const { analyze, loading, progress, currentStep } = useAnalyze();
@@ -45,8 +46,8 @@ const Home = () => {
       return;
     }
 
-    console.log('[DEBUG Home.js] Validation passed. Calling analyze() hook...');
-    analyze(file, jobDescription);
+    console.log('[DEBUG Home.js] Validation passed. Calling analyze() hook with githubUrl:', githubUrl);
+    analyze(file, jobDescription, githubUrl);
   };
 
   const handleSelectMockProfile = (mockAnalysis) => {
@@ -226,6 +227,30 @@ const Home = () => {
                 <span className="text-cyan-400">{jobDescription.length} characters</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* 3. GitHub Profile URL Card */}
+        <div className="mt-8 glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+          <h2 className="text-xl font-heading font-bold mb-2 flex items-center text-white">
+            <Github className="w-5 h-5 mr-3 text-cyan-400" />
+            3. GitHub Profile URL
+          </h2>
+          <p className="text-xs font-mono text-slate-400 mb-4">
+            Paste your public GitHub profile URL.
+          </p>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Github className="w-5 h-5 text-slate-500" />
+            </div>
+            <input
+              type="url"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              placeholder="https://github.com/username"
+              className="w-full glass-input rounded-2xl py-3.5 pl-12 pr-4 text-slate-100 placeholder-slate-500 focus:outline-none font-mono text-sm border border-white/10 focus:border-cyan-500/50 transition-colors"
+            />
           </div>
         </div>
 

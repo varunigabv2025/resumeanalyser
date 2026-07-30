@@ -26,6 +26,7 @@ app.use(express.json());
 // Multer configuration for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 // Helper functions
 function extractCandidateName(resumeText) {
   const lines = resumeText.split('\n');
@@ -56,7 +57,7 @@ function extractJobTitle(jobDescription) {
 // POST /api/analyze
 app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
   try {
-    const { job_description } = req.body;
+    const { job_description, github_url } = req.body;
     const file = req.file;
     
     if (!file) {
@@ -83,6 +84,20 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
     
     // Run all AI analyses
     const analysisResults = await runAllAnalyses(resumeText, job_description, candidateName);
+
+    // Optional GitHub Profile Analysis
+    let githubAnalysis = null;
+    if (github_url && typeof github_url === 'string' && github_url.trim()) {
+      const username = github_url.trim().split('/').filter(Boolean).pop();
+      if (username) {
+        try {
+          console.log(`[server.js] Analyzing GitHub profile for username: ${username}...`);
+          githubAnalysis = await analyzeGithubProfile(username, analysisResults.core_match?.matched_skills || []);
+        } catch (ghErr) {
+          console.warn('[server.js] GitHub profile analysis skipped:', ghErr.message);
+        }
+      }
+    }
     
     // Save to database
     const insertQuery = `
@@ -138,13 +153,13 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
         id: this.lastID,
         created_at: new Date().toISOString(),
         job_title: jobTitle,
+        github_analysis: githubAnalysis,
         ...analysisResults
       };
       console.log("FINAL RESPONSE:");
       console.log(JSON.stringify(response, null, 2));
       
       res.json(response);
-
     });
     
   } catch (error) {
