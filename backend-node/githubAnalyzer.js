@@ -18,8 +18,24 @@ const TOPIC_ALIASES = {
   typescript: 'TypeScript',
   javascript: 'JavaScript',
   tailwindcss: 'Tailwind CSS',
-  expressjs: 'Express'
+  expressjs: 'Express',
+  docker: 'Docker',
+  kubernetes: 'Kubernetes'
 };
+
+function parseGithubUsername(urlOrUsername) {
+  if (!urlOrUsername || typeof urlOrUsername !== 'string') return '';
+  let cleaned = urlOrUsername.trim().replace(/\?.*$/, '').replace(/#.*$/, '');
+  cleaned = cleaned.replace(/\/+$/, '');
+  
+  if (cleaned.includes('github.com/')) {
+    const afterHost = cleaned.split('github.com/').pop();
+    const parts = afterHost.split('/');
+    return parts[0] || '';
+  }
+  
+  return cleaned.split('/').pop() || '';
+}
 
 function normalizeTopic(topic) {
   if (!topic || typeof topic !== 'string') return '';
@@ -42,7 +58,7 @@ function githubHeaders() {
     Accept: 'application/vnd.github+json'
   };
 
-  if (GITHUB_TOKEN) {
+  if (GITHUB_TOKEN && !GITHUB_TOKEN.includes('your_')) {
     headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
   }
 
@@ -78,8 +94,7 @@ async function fetchUserRepos(username) {
     headers: githubHeaders(),
     params: {
       per_page: 100,
-      sort: 'pushed',
-      type: 'owner'
+      sort: 'pushed'
     }
   });
   return response.data;
@@ -111,7 +126,9 @@ async function inspectRepoFiles(owner, repoName, masterSkillMap) {
     const files = Array.isArray(response.data) ? response.data : [];
     const fileNames = files.map(f => f.name.toLowerCase());
 
-    // Check manifest dependency files
+    console.log(`[DEBUG GitHub] Repo "${repoName}" root files inspected:`, fileNames.slice(0, 8).join(', '));
+
+    // 1. package.json inspection
     if (fileNames.includes('package.json')) {
       try {
         const pkgUrl = `${GITHUB_API_BASE}/repos/${owner}/${repoName}/contents/package.json`;
@@ -126,11 +143,12 @@ async function inspectRepoFiles(owner, repoName, masterSkillMap) {
         if (deps['typescript']) recordProof('TypeScript', `package.json: typescript dependency in ${repoName}`, 96);
         if (deps['tailwindcss']) recordProof('Tailwind CSS', `package.json: tailwindcss dependency in ${repoName}`, 94);
         if (deps['mongodb'] || deps['mongoose']) recordProof('MongoDB', `package.json: mongodb/mongoose dependency in ${repoName}`, 95);
-        if (deps['pg'] || deps['sequelize'] || deps['typeorm'] || deps['prisma']) recordProof('PostgreSQL', `package.json: database ORM/driver in ${repoName}`, 95);
+        if (deps['pg'] || deps['sequelize'] || deps['typeorm'] || deps['prisma']) recordProof('PostgreSQL', `package.json: database driver in ${repoName}`, 95);
         if (deps['redis'] || deps['ioredis']) recordProof('Redis', `package.json: redis dependency in ${repoName}`, 92);
       } catch (e) {}
     }
 
+    // 2. Python requirements.txt / Pipfile inspection
     if (fileNames.includes('requirements.txt') || fileNames.includes('pipfile')) {
       try {
         const reqUrl = `${GITHUB_API_BASE}/repos/${owner}/${repoName}/contents/requirements.txt`;
@@ -148,6 +166,7 @@ async function inspectRepoFiles(owner, repoName, masterSkillMap) {
       } catch (e) {}
     }
 
+    // 3. Docker & Deployment files
     if (fileNames.includes('dockerfile')) recordProof('Docker', `Dockerfile configuration in ${repoName}`, 98);
     if (fileNames.includes('docker-compose.yml') || fileNames.includes('docker-compose.yaml')) recordProof('Docker', `docker-compose configuration in ${repoName}`, 98);
     if (fileNames.includes('tsconfig.json')) recordProof('TypeScript', `tsconfig.json configuration in ${repoName}`, 96);
@@ -158,43 +177,55 @@ async function inspectRepoFiles(owner, repoName, masterSkillMap) {
   } catch (e) {}
 }
 
-async function analyzeGithubProfile(username, resumeSkills = []) {
-  if (!username || typeof username !== 'string' || !username.trim()) {
+async function analyzeGithubProfile(urlOrUsername, resumeSkills = []) {
+  const cleanUsername = parseGithubUsername(urlOrUsername);
+  console.log(`[DEBUG GitHub] Step 1: Parsed username: "${cleanUsername}" from raw input: "${urlOrUsername}"`);
+
+  if (!cleanUsername) {
+    console.warn('[DEBUG GitHub] Failure: GitHub username is empty or invalid.');
     return { error: 'GitHub username is required', status: 400 };
   }
 
-  const cleanUsername = username.trim();
   let repos;
 
   try {
+    console.log(`[DEBUG GitHub] Step 2: Calling GitHub API GET /users/${cleanUsername}/repos...`);
     repos = await fetchUserRepos(cleanUsername);
   } catch (error) {
     if (error.response?.status === 404) {
+      console.warn(`[DEBUG GitHub] Failure: GitHub user "${cleanUsername}" not found (404).`);
       return { error: `GitHub user "${cleanUsername}" not found`, status: 404 };
     }
 
     const rateLimitError = buildRateLimitError(error);
     if (rateLimitError) {
+      console.warn(`[DEBUG GitHub] Failure: ${rateLimitError.error}`);
       return rateLimitError;
     }
 
     if (error.response) {
+      console.warn(`[DEBUG GitHub] Failure: GitHub API ${error.response.status} ${error.response.statusText}`);
       return {
         error: `GitHub API error: ${error.response.status} ${error.response.statusText}`,
         status: error.response.status
       };
     }
 
+    console.warn(`[DEBUG GitHub] Failure: Failed to reach GitHub API (${error.message})`);
     return { error: `Failed to reach GitHub API: ${error.message}`, status: 502 };
   }
 
   const allRepos = repos || [];
+  const repoNames = allRepos.map(r => r.name);
+  console.log(`[DEBUG GitHub] Step 3: ${allRepos.length} public repositories found for ${cleanUsername}:`, repoNames.slice(0, 10).join(', '));
+
   const masterSkillMap = new Map();
 
   // Inspect primary repository languages
   const languages = [...new Set(
     allRepos.map(repo => repo.language).filter(Boolean)
   )];
+  console.log(`[DEBUG GitHub] Detected repository languages:`, languages.join(', '));
 
   languages.forEach(lang => {
     const norm = normalizeTopic(lang);
@@ -208,13 +239,15 @@ async function analyzeGithubProfile(username, resumeSkills = []) {
     }
   });
 
-  // Always record Git evidence for active users
-  masterSkillMap.set('Git', {
-    name: 'Git',
-    confidence: 99,
-    repositories: new Set(allRepos.map(r => r.name)),
-    evidence: new Set([`Active GitHub profile (@${cleanUsername}) with ${allRepos.length} public repositories`])
-  });
+  // Record Git evidence for profile with repos
+  if (allRepos.length > 0) {
+    masterSkillMap.set('Git', {
+      name: 'Git',
+      confidence: 99,
+      repositories: new Set(repoNames),
+      evidence: new Set([`Active GitHub profile (@${cleanUsername}) with ${allRepos.length} public repositories`])
+    });
+  }
 
   const lastCommitDate = allRepos.reduce((latest, repo) => {
     if (!repo.pushed_at) return latest;
@@ -225,13 +258,12 @@ async function analyzeGithubProfile(username, resumeSkills = []) {
   }, null);
 
   const reposToInspect = allRepos.slice(0, MAX_REPOS_TO_INSPECT);
-  let hasDocker = false;
-  let hasCI = false;
+  console.log(`[DEBUG GitHub] Step 4: Inspecting manifest files across top ${reposToInspect.length} repositories...`);
 
   for (const repo of reposToInspect) {
     const owner = repo.owner?.login || cleanUsername;
 
-    // Check topics
+    // Check repository topics
     if (Array.isArray(repo.topics)) {
       repo.topics.forEach(t => {
         const norm = normalizeTopic(t);
@@ -256,10 +288,6 @@ async function analyzeGithubProfile(username, resumeSkills = []) {
     await inspectRepoFiles(owner, repo.name, masterSkillMap);
   }
 
-  // Docker & CI evidence check
-  if (masterSkillMap.has('Docker')) hasDocker = true;
-  if (masterSkillMap.has('CI/CD')) hasCI = true;
-
   const verifiedSkills = Array.from(masterSkillMap.values()).map(item => ({
     name: item.name,
     confidence: item.confidence,
@@ -268,20 +296,25 @@ async function analyzeGithubProfile(username, resumeSkills = []) {
   }));
 
   const skills = verifiedSkills.map(v => v.name);
+  console.log(`[DEBUG GitHub] Step 5 & 6: ${verifiedSkills.length} Verified Skills extracted:`, skills.join(', '));
 
-  return {
+  const finalOutput = {
     username: cleanUsername,
     verifiedSkills,
     languages,
     skills,
     repos: allRepos.map(r => ({ name: r.name, description: r.description, language: r.language })),
     repoCount: allRepos.length,
-    hasDocker,
-    hasCI,
+    hasDocker: masterSkillMap.has('Docker'),
+    hasCI: masterSkillMap.has('CI/CD'),
     lastCommitDate: lastCommitDate || null
   };
+
+  console.log(`[DEBUG GitHub] Step 7: Returning complete githubAnalysis object to pipeline.`);
+  return finalOutput;
 }
 
 module.exports = {
+  parseGithubUsername,
   analyzeGithubProfile
 };

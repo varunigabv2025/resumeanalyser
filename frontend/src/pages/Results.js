@@ -67,7 +67,7 @@ const Results = () => {
   const trustScoreData = result?.trustAnalysis || result?.trust_score || {
     score: 50,
     category: 'Medium',
-    verifiedSkills: unifiedProfile.verifiedSkills?.map(v => v.skill) || [],
+    verifiedSkills: unifiedProfile.verifiedSkills?.map(v => v.skill || v.name) || [],
     unverifiedSkills: unifiedProfile.unverifiedClaims || [],
     unlocked: true
   };
@@ -202,6 +202,17 @@ const Results = () => {
           </div>
         </div>
 
+        {/* Diagnostic Banner for GitHub API errors */}
+        {result?.githubAnalysis?.error && (
+          <div className="p-4 mb-6 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-xs space-y-1">
+            <div className="font-bold flex items-center space-x-2 text-amber-200">
+              <AlertTriangle className="w-4 h-4" />
+              <span>GitHub API Diagnostic Notice:</span>
+            </div>
+            <p>{result.githubAnalysis.error}</p>
+          </div>
+        )}
+
         {/* Verified Skills */}
         <div className="mb-6">
           <h3 className="text-sm font-mono uppercase text-emerald-400 font-bold mb-3 flex items-center space-x-2">
@@ -211,10 +222,12 @@ const Results = () => {
           <div className="flex flex-wrap gap-2">
             {unifiedProfile.verifiedSkills?.length > 0 ? (
               unifiedProfile.verifiedSkills.map((v, i) => (
-                <SkillBadge key={i} skill={v.skill} type="verified" evidence={v.evidence} />
+                <SkillBadge key={i} skill={v.skill || v.name} type="verified" evidence={Array.isArray(v.evidence) ? v.evidence.join(' | ') : v.evidence} />
               ))
             ) : (
-              <p className="text-xs font-mono text-slate-400">No verified code claims found.</p>
+              <p className="text-xs font-mono text-slate-400">
+                {result?.githubAnalysis?.error ? result.githubAnalysis.error : 'No verified code claims found in GitHub repositories.'}
+              </p>
             )}
           </div>
         </div>
