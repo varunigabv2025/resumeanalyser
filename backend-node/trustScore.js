@@ -1,33 +1,22 @@
-// Find verified skills
 function getVerifiedSkills(resumeSkills, githubSkills) {
     return resumeSkills.filter(skill =>
-        githubSkills.some(g =>
-            g.toLowerCase() === skill.toLowerCase()
-        )
+        githubSkills.some(g => g.toLowerCase() === skill.toLowerCase())
     );
 }
 
-// Find missing skills
 function getMissingSkills(resumeSkills, githubSkills) {
     return resumeSkills.filter(skill =>
-        !githubSkills.some(g =>
-            g.toLowerCase() === skill.toLowerCase()
-        )
+        !githubSkills.some(g => g.toLowerCase() === skill.toLowerCase())
     );
 }
 
-// Find extra GitHub skills
 function getExtraSkills(resumeSkills, githubSkills) {
     return githubSkills.filter(skill =>
-        !resumeSkills.some(r =>
-            r.toLowerCase() === skill.toLowerCase()
-        )
+        !resumeSkills.some(r => r.toLowerCase() === skill.toLowerCase())
     );
 }
 
-// Calculate trust score
 function calculateTrustScore(resumeSkills, githubSkills) {
-
     const verified = getVerifiedSkills(resumeSkills, githubSkills);
 
     const score = resumeSkills.length === 0
@@ -37,38 +26,18 @@ function calculateTrustScore(resumeSkills, githubSkills) {
     return score;
 }
 
-// Status
 function getStatus(score) {
-
-    if (score >= 90) return "Highly Verified";
-    if (score >= 70) return "Verified";
-    if (score >= 50) return "Needs Improvement";
+    if (score >= 50)
+        return "Verified";
 
     return "Needs More Public Evidence";
 }
 
-// Matching flag
-function matchingEnabled(score) {
+function isMatchingEnabled(score) {
     return score >= 50;
 }
 
-// Generate full report
-function generateReport(user) {
-
-    const verified = getVerifiedSkills(
-        user.resume_skills,
-        user.github_skills
-    );
-
-    const missing = getMissingSkills(
-        user.resume_skills,
-        user.github_skills
-    );
-
-    const extra = getExtraSkills(
-        user.resume_skills,
-        user.github_skills
-    );
+function generateTrustReport(user) {
 
     const score = calculateTrustScore(
         user.resume_skills,
@@ -78,18 +47,24 @@ function generateReport(user) {
     return {
         name: user.name,
         trust_score: score,
+        verified_skills: getVerifiedSkills(
+            user.resume_skills,
+            user.github_skills
+        ),
+        missing_skills: getMissingSkills(
+            user.resume_skills,
+            user.github_skills
+        ),
+        extra_github_skills: getExtraSkills(
+            user.resume_skills,
+            user.github_skills
+        ),
         status: getStatus(score),
-        matching_enabled: matchingEnabled(score),
-        verified_skills: verified,
-        missing_skills: missing,
-        extra_github_skills: extra
+        matching_enabled: isMatchingEnabled(score)
     };
 }
 
 module.exports = {
-    generateReport,
-    calculateTrustScore,
-    getVerifiedSkills,
-    getMissingSkills,
-    getExtraSkills
+    generateTrustReport,
+    calculateTrustScore
 };
