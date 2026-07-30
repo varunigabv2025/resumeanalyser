@@ -1,0 +1,102 @@
+[
+    {
+        "name": "Alice",
+        "resume_skills": ["Python", "React", "SQL", "Docker"],
+        "github_skills": ["Python", "React", "SQL"]
+    },
+    {
+        "name": "Bob",
+        "resume_skills": ["JavaScript", "TypeScript", "Node.js", "MongoDB"],
+        "github_skills": ["JavaScript", "TypeScript", "Node.js", "MongoDB"]
+    },
+    {
+        "name": "Charlie",
+        "resume_skills": ["Java", "Spring", "PostgreSQL", "Kubernetes"],
+        "github_skills": ["Java", "Spring", "PostgreSQL"]
+    },
+    {
+        "name": "Diana",
+        "resume_skills": ["Go", "Rust", "Docker", "AWS"],
+        "github_skills": ["Go", "Rust", "Docker", "AWS"]
+    },
+    {
+        "name": "Eve",
+        "resume_skills": ["Python", "Django", "PostgreSQL", "Redis"],
+        "github_skills": ["Python", "Django"]
+    },
+    {
+        "name": "Frank",
+        "resume_skills": ["Ruby", "Rails", "MySQL", "Sidekiq"],
+        "github_skills": ["Ruby", "Rails", "MySQL", "Sidekiq"]
+    },
+    {
+        "name": "Grace",
+        "resume_skills": ["C++", "CMake", "Linux", "Git"],
+        "github_skills": ["C++", "CMake"]
+    },
+    {
+        "name": "Henry",
+        "resume_skills": ["PHP", "Laravel", "MySQL", "Nginx"],
+        "github_skills": ["PHP", "Laravel", "MySQL"]
+    },
+    {
+        "name": "Ivy",
+        "resume_skills": ["Swift", "iOS", "SwiftUI", "CoreData"],
+        "github_skills": ["Swift", "iOS", "SwiftUI", "CoreData"]
+    },
+    {
+        "name": "Jack",
+        "resume_skills": ["Kotlin", "Android", "Jetpack", "Firebase"],
+        "github_skills": ["Kotlin", "Android"]
+    },
+    {
+        "name": "Kate",
+        "resume_skills": ["Python", "Machine Learning", "TensorFlow", "PyTorch"],
+        "github_skills": ["Python", "Machine Learning"]
+    },
+    {
+        "name": "Leo",
+        "resume_skills": ["R", "Statistics", "Data Visualization", "SQL"],
+        "github_skills": ["R", "Statistics", "Data Visualization", "SQL"]
+    },
+    {
+        "name": "Mia",
+        "resume_skills": ["Scala", "Spark", "Hadoop", "Kafka"],
+        "github_skills": ["Scala", "Spark"]
+    },
+    {
+        "name": "Noah",
+        "resume_skills": ["Vue.js", "JavaScript", "CSS", "HTML"],
+        "github_skills": ["Vue.js", "JavaScript", "CSS", "HTML"]
+    },
+    {
+        "name": "Olivia",
+        "resume_skills": ["Angular", "TypeScript", "RxJS", "NgRx"],
+        "github_skills": ["Angular", "TypeScript"]
+    },
+    {
+        "name": "Peter",
+        "resume_skills": ["C#", ".NET", "Azure", "SQL Server"],
+        "github_skills": ["C#", ".NET", "Azure", "SQL Server"]
+    },
+    {
+        "name": "Quinn",
+        "resume_skills": ["Flutter", "Dart", "Firebase", "REST APIs"],
+        "github_skills": ["Flutter", "Dart"]
+    },
+    {
+        "name": "Rachel",
+        "resume_skills": ["Elixir", "Phoenix", "PostgreSQL", "Ecto"],
+        "github_skills": ["Elixir", "Phoenix", "PostgreSQL", "Ecto"]
+    },
+    {
+        "name": "Sam",
+        "resume_skills": ["Clojure", "ClojureScript", "Datomic", "Re-frame"],
+        "github_skills": ["Clojure"]
+    },
+    {
+        "name": "Tina",
+        "resume_skills": ["Julia", "Data Science", "Numerical Computing", "Plots"],
+        "github_skills": []
+    }
+]
