@@ -177,7 +177,7 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
         skill_swap: skillSwapMatches,
         ...analysisResults
       };
-      console.log("FINAL ANALYSIS RESPONSE GENERATED:");
+      console.log("UNIFIED ANALYSIS RESPONSE PAYLOAD:");
       console.log(JSON.stringify(response, null, 2));
       
       res.json(response);

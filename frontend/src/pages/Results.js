@@ -29,6 +29,7 @@ const Results = () => {
     return null;
   }
 
+  // Single Source of Truth Consumption
   const coreMatch = result?.core_match || {
     overall_score: 0,
     section_scores: {},
@@ -54,10 +55,18 @@ const Results = () => {
   const coverLetter = result?.cover_letter || { subject_line: '', cover_letter: '', highlights_used: [], tone: '' };
   const interviewPrep = result?.interview_prep || { technical_questions: [], coding_questions: [], behavioral_questions: [], project_discussion: [] };
 
-  const unifiedProfile = typeof mergeProfile === 'function' ? mergeProfile(result, {
-    skills: result?.github_analysis?.skills || [],
-    username: result?.github_analysis?.username || "candidate-dev"
-  }) : { verifiedSkills: [], unverifiedClaims: [], resumeRecommendations: [] };
+  // Use precomputed unified profile or generate from backend API response
+  const unifiedProfile = result?.unified_profile || mergeProfile(result, result?.github_analysis || {});
+
+  const trustScoreData = result?.trust_score || {
+    score: 50,
+    category: 'Medium',
+    verifiedSkills: unifiedProfile.verifiedSkills?.map(v => v.skill) || [],
+    unverifiedSkills: unifiedProfile.unverifiedClaims || [],
+    unlocked: true
+  };
+
+  const skillSwapMatches = result?.skill_swap || [];
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Sparkles },
@@ -76,14 +85,6 @@ const Results = () => {
     navigator.clipboard.writeText(allRewrites);
     toast.success('All improved bullet rewrites copied to clipboard!');
   };
-
-  const trustScoreData = result?.trust_score || {
-    score: Math.round(((unifiedProfile.verifiedSkills?.length || 0) / Math.max(1, (coreMatch?.matched_skills?.length || 1))) * 100),
-    category: (unifiedProfile.verifiedSkills?.length || 0) >= 3 ? 'High' : (unifiedProfile.verifiedSkills?.length || 0) >= 1 ? 'Medium' : 'Low',
-    unlocked: (unifiedProfile.verifiedSkills?.length || 0) >= 1
-  };
-
-  const skillSwapMatches = result?.skill_swap || [];
 
   const renderOverview = () => (
     <div className="space-y-8 fade-in">
@@ -199,7 +200,7 @@ const Results = () => {
         <div className="mb-6">
           <h3 className="text-sm font-mono uppercase text-emerald-400 font-bold mb-3 flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Verified Skills (Code Evidence Verified on GitHub)</span>
+            <span>Verified Skills ({unifiedProfile.verifiedSkills?.length || 0})</span>
           </h3>
           <div className="flex flex-wrap gap-2">
             {unifiedProfile.verifiedSkills?.length > 0 ? (
@@ -216,7 +217,7 @@ const Results = () => {
         <div className="mb-6">
           <h3 className="text-sm font-mono uppercase text-amber-400 font-bold mb-3 flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4" />
-            <span>Unverified Resume Claims</span>
+            <span>Unverified Resume Claims ({unifiedProfile.unverifiedClaims?.length || 0})</span>
           </h3>
           <div className="flex flex-wrap gap-2">
             {unifiedProfile.unverifiedClaims?.length > 0 ? (
@@ -259,11 +260,19 @@ const Results = () => {
             <p className="text-xs font-mono text-slate-400">Database peer developer matching for reciprocal skill exchange</p>
           </div>
           <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            {skillSwapMatches.length} Matches Found
+            {trustScoreData.unlocked ? `${skillSwapMatches.length} Matches Found` : 'Locked 🔒'}
           </span>
         </div>
 
-        {skillSwapMatches.length > 0 ? (
+        {!trustScoreData.unlocked ? (
+          <div className="p-8 rounded-2xl bg-space-950/80 border border-amber-500/30 text-center space-y-3">
+            <ShieldCheck className="w-10 h-10 text-amber-400 mx-auto" />
+            <h4 className="font-heading font-bold text-white text-base">SkillSwap Engine Locked</h4>
+            <p className="text-xs font-mono text-slate-400 max-w-md mx-auto leading-relaxed">
+              SkillSwap mentorship interactions require a minimum Trust Verification Score of 50%. Provide your GitHub profile URL or verify skills to unlock peer exchange.
+            </p>
+          </div>
+        ) : skillSwapMatches.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-4">
             {skillSwapMatches.map((match, idx) => (
               <div key={idx} className="p-5 rounded-2xl bg-space-950/80 border border-white/10 flex flex-col justify-between space-y-4">
