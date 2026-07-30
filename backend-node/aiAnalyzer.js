@@ -34,11 +34,11 @@ function extractKeywords(text) {
 function fallbackCoreMatch(resumeText, jobDescription) {
   const resumeKeywords = extractKeywords(resumeText);
   const jdKeywords = extractKeywords(jobDescription);
-  
-  const matched = jdKeywords.length > 0 
+
+  const matched = jdKeywords.length > 0
     ? jdKeywords.filter(k => resumeKeywords.map(r => r.toLowerCase()).includes(k.toLowerCase()))
     : resumeKeywords;
-  
+
   const missing = jdKeywords.filter(k => !matched.map(m => m.toLowerCase()).includes(k.toLowerCase()));
 
   const matchedSet = new Set(matched);
@@ -168,7 +168,7 @@ function fallbackGaps(resumeText, jobDescription) {
 function fallbackCoverLetter(resumeText, jobDescription, candidateName = "Candidate", githubAnalysis = null) {
   const core = fallbackCoreMatch(resumeText, jobDescription);
   const highlights = core.matched_skills.slice(0, 3);
-  const githubText = githubAnalysis?.username 
+  const githubText = githubAnalysis?.username
     ? ` On GitHub (@${githubAnalysis.username}), I maintain ${githubAnalysis.repoCount || 'multiple'} repositories featuring ${githubAnalysis.languages?.slice(0, 3).join(', ') || 'modern stacks'}.`
     : '';
 

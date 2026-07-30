@@ -4,6 +4,8 @@ const { mergeProfile } = require('./profileMerger');
 const { runAllAnalyses } = require('../aiAnalyzer');
 const { calculateTrustScore } = require('../trustScore');
 const { findMatchesForCandidate } = require('../skillMatcher');
+const { normalizeSkillList } = require('./skillNormalizationService');
+const { buildCandidateProfile } = require('./matchingEngine');
 
 function extractCandidateName(resumeText) {
   if (!resumeText) return 'Candidate';
@@ -37,13 +39,13 @@ async function analyzeCandidate({ resumeBuffer, mimeType, jobDescription, github
   let status = 'SUCCESS';
   let confidence = 95;
 
-  // 1. Resume Parsing
+  // 1. Resume Text Extraction
   const resumeText = await extractResumeText(resumeBuffer, mimeType);
   if (typeof resumeText !== 'string' || !resumeText.trim()) {
     throw new Error('Failed to extract readable text from resume.');
   }
 
-  // 2. GitHub Analysis (Optional / Graceful Failover)
+  // 2. GitHub Evidence Extraction
   let githubAnalysis = null;
   if (githubUrl && typeof githubUrl === 'string' && githubUrl.trim()) {
     const username = githubUrl.trim().split('/').filter(Boolean).pop();
@@ -69,26 +71,60 @@ async function analyzeCandidate({ resumeBuffer, mimeType, jobDescription, github
   // 3. AI Analysis Suite
   const aiResults = await runAllAnalyses(resumeText, jobDescription, candidateName, githubAnalysis);
 
-  const matchedSkills = aiResults.core_match?.matched_skills || [];
-  const missingSkills = aiResults.core_match?.missing_skills || [];
-  const githubSkills = githubAnalysis?.skills || [];
+  // Extract raw skills from data sources
+  const rawResumeSkills = aiResults.core_match?.matched_skills || [];
+  const rawJobSkills = [...(aiResults.core_match?.matched_skills || []), ...(aiResults.core_match?.missing_skills || [])];
+  const rawGithubSkills = githubAnalysis?.skills || [];
 
-  // 4. Unified Profile Builder
-  const candidateProfile = mergeProfile(aiResults, githubAnalysis);
+  // 4. Master Candidate Profile Construction (Single Source of Truth)
+  const candidateProfile = buildCandidateProfile({
+    rawResumeSkills,
+    rawGithubSkills,
+    rawJobSkills,
+    githubAnalysis,
+    coreMatch: aiResults.core_match,
+    atsAnalysis: aiResults.ats
+  });
 
-  // 5. Trust Score Calculation (Single Source of Truth)
-  const trustAnalysis = calculateTrustScore(matchedSkills, githubSkills, {
+  // Ensure Core Match & ATS use normalized master skills
+  aiResults.core_match.matched_skills = candidateProfile.matchedSkills;
+  aiResults.core_match.missing_skills = candidateProfile.missingSkills;
+  aiResults.ats.keyword_density = {
+    high_match: candidateProfile.matchedSkills,
+    partial_match: candidateProfile.partiallyMatchedSkills,
+    missing: candidateProfile.missingSkills
+  };
+
+  // 5. Unified Trust Score Calculation
+  const trustAnalysis = calculateTrustScore(candidateProfile.matchedSkills, githubSkills, {
     githubAnalysis,
     overallScore: aiResults.core_match?.overall_score,
     atsScore: aiResults.ats?.ats_score
   });
 
-  // 6. SkillSwap Engine (Single Source of Truth)
-  const skillSwapMatches = findMatchesForCandidate(matchedSkills, missingSkills, candidateName);
+  // 6. SkillSwap Engine
+  const skillSwapMatches = findMatchesForCandidate(candidateProfile.matchedSkills, candidateProfile.missingSkills, candidateName);
 
-  // Return ONE Unified Response Object
+  // 7. Ensure Roadmap recommends ONLY genuine missingSkills
+  if (aiResults.gaps && Array.isArray(aiResults.gaps.skill_gaps)) {
+    aiResults.gaps.skill_gaps = candidateProfile.missingSkills.map(skill => ({
+      skill,
+      priority: 'High',
+      estimated_time: '2 weeks',
+      resources: [
+        { name: `${skill} Official Guides`, url: `https://google.com/search?q=${encodeURIComponent(skill + ' documentation')}` }
+      ]
+    }));
+  }
+
+  const mergedLegacyProfile = mergeProfile(aiResults, githubAnalysis);
+
+  // Return Master CandidateProfile Response Object
   return {
-    candidateProfile,
+    candidateProfile: {
+      ...candidateProfile,
+      user: { name: candidateName, title: jobTitle }
+    },
     githubAnalysis,
     atsAnalysis: aiResults.ats || {},
     trustAnalysis,
@@ -103,7 +139,7 @@ async function analyzeCandidate({ resumeBuffer, mimeType, jobDescription, github
     },
     coreMatch: aiResults.core_match || {},
     rewrites: aiResults.rewrites || { rewrites: [] },
-    recommendations: candidateProfile.resumeRecommendations || [],
+    recommendations: mergedLegacyProfile.resumeRecommendations || [],
     metadata: {
       status,
       confidence,
