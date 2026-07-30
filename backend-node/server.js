@@ -1,0 +1,243 @@
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const db = require('./database');
+const { extractResumeText } = require('./resumeParser');
+const { runAllAnalyses } = require('./aiAnalyzer');
+
+const app = express();
+const PORT = process.env.PORT || 8000;
+
+// Middleware
+app.use(cors({
+  origin: [
+    'https://resume-iq-jade-nu.vercel.app'
+  ],
+  credentials: true
+}));
+app.use(express.json());
+
+// Multer configuration for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+// Helper functions
+function extractCandidateName(resumeText) {
+  const lines = resumeText.split('\n');
+  if (lines.length > 0) {
+    const firstLine = lines[0].trim();
+    if (firstLine.length < 50 && !/\d/.test(firstLine)) {
+      return firstLine;
+    }
+  }
+  return 'Candidate';
+}
+
+function extractJobTitle(jobDescription) {
+  const lines = jobDescription.split('\n');
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const line = lines[i].trim();
+    if (line && !/^we are|^we're|^about the|^job/i.test(line)) {
+      if (line.length < 100) {
+        return line;
+      }
+    }
+  }
+  return 'Position';
+}
+
+// Routes
+
+// POST /api/analyze
+app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
+  try {
+    const { job_description } = req.body;
+    const file = req.file;
+    
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    if (!job_description) {
+      return res.status(400).json({ error: 'Job description is required' });
+    }
+    
+    // Extract text from resume
+    const resumeText = await extractResumeText(file.buffer, file.mimetype);
+    if (typeof resumeText !== "string") {
+  return res.status(200).json(resumeText);
+}
+
+    console.log("========== RESUME ==========");
+console.log(resumeText);
+console.log("============================");
+    
+    // Extract candidate name and job title
+    const candidateName = extractCandidateName(resumeText);
+    const jobTitle = extractJobTitle(job_description);
+    
+    // Run all AI analyses
+    const analysisResults = await runAllAnalyses(resumeText, job_description, candidateName);
+    
+    // Save to database
+    const insertQuery = `
+      INSERT INTO resume_analyses (
+        job_title, job_description, resume_text, overall_score,
+        section_scores, matched_skills, missing_skills, improvement_tips,
+        keyword_gaps, summary, ats_score, parsing_issues, detected_sections,
+        missing_sections, keyword_density, formatting_warnings, ats_verdict,
+        rewrites, readiness_percentage, gap_summary, skill_gaps, milestones,
+        subject_line, cover_letter, highlights_used, tone
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+    `;
+    
+    const values = [
+      jobTitle,
+      job_description,
+      resumeText,
+      analysisResults.core_match?.overall_score || 0,
+      JSON.stringify(analysisResults.core_match?.section_scores || {}),
+      JSON.stringify(analysisResults.core_match?.matched_skills || []),
+      JSON.stringify(analysisResults.core_match?.missing_skills || []),
+      JSON.stringify(analysisResults.core_match?.improvement_tips || []),
+      JSON.stringify(analysisResults.core_match?.keyword_gaps || []),
+      analysisResults.core_match?.summary || '',
+      analysisResults.ats?.ats_score || 0,
+      JSON.stringify(analysisResults.ats?.parsing_issues || []),
+JSON.stringify(analysisResults.ats?.detected_sections || []),
+JSON.stringify(analysisResults.ats?.missing_sections || []),
+JSON.stringify(analysisResults.ats?.keyword_density || {}),
+JSON.stringify(analysisResults.ats?.formatting_warnings || []),
+analysisResults.ats?.ats_verdict || '',
+
+JSON.stringify(analysisResults.rewrites?.rewrites || []),
+
+analysisResults.gaps?.readiness_percentage || 0,
+analysisResults.gaps?.gap_summary || '',
+JSON.stringify(analysisResults.gaps?.skill_gaps || []),
+JSON.stringify(analysisResults.gaps?.milestones || []),
+
+analysisResults.cover_letter?.subject_line || '',
+analysisResults.cover_letter?.cover_letter || '',
+JSON.stringify(analysisResults.cover_letter?.highlights_used || []),
+analysisResults.cover_letter?.tone || ''
+    ];
+    
+    db.run(insertQuery, values, function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Failed to save analysis' });
+      }
+      
+      const response = {
+        id: this.lastID,
+        created_at: new Date().toISOString(),
+        job_title: jobTitle,
+        ...analysisResults
+      };
+      console.log("FINAL RESPONSE:");
+console.log(JSON.stringify(response, null, 2));
+      
+      res.json(response);
+
+    });
+    
+  } catch (error) {
+    console.error('Analysis error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/history
+app.get('/api/history', (req, res) => {
+  const query = `
+    SELECT id, created_at, job_title, overall_score
+    FROM resume_analyses
+    ORDER BY created_at DESC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to fetch history' });
+    }
+    
+    const analyses = rows.map(row => ({
+      id: row.id,
+      created_at: row.created_at,
+      job_title: row.job_title,
+      overall_score: row.overall_score
+    }));
+    
+    res.json(analyses);
+  });
+});
+
+// GET /api/history/:id
+app.get('/api/history/:id', (req, res) => {
+  const { id } = req.params;
+  
+  const query = 'SELECT * FROM resume_analyses WHERE id = ?';
+  
+  db.get(query, [id], (err, row) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to fetch analysis' });
+    }
+    
+    if (!row) {
+      return res.status(404).json({ error: 'Analysis not found' });
+    }
+  const analysis = {
+  id: row.id,
+  created_at: row.created_at,
+  job_title: row.job_title,
+
+  core_match: {
+    overall_score: row.overall_score,
+    section_scores: JSON.parse(row.section_scores || '{}'),
+    matched_skills: JSON.parse(row.matched_skills || '[]'),
+    missing_skills: JSON.parse(row.missing_skills || '[]'),
+    improvement_tips: JSON.parse(row.improvement_tips || '[]'),
+    keyword_gaps: JSON.parse(row.keyword_gaps || '[]'),
+    summary: row.summary || ''
+  },
+
+  ats: {
+    ats_score: row.ats_score,
+    parsing_issues: JSON.parse(row.parsing_issues || '[]'),
+    detected_sections: JSON.parse(row.detected_sections || '[]'),
+    missing_sections: JSON.parse(row.missing_sections || '[]'),
+    keyword_density: JSON.parse(row.keyword_density || '{}'),
+    formatting_warnings: JSON.parse(row.formatting_warnings || '[]'),
+    ats_verdict: row.ats_verdict || ''
+  },
+
+  rewrites: {
+    rewrites: JSON.parse(row.rewrites || '[]')
+  },
+
+  gaps: {
+    readiness_percentage: row.readiness_percentage,
+    gap_summary: row.gap_summary || '',
+    skill_gaps: JSON.parse(row.skill_gaps || '[]'),
+    milestones: JSON.parse(row.milestones || '[]')
+  },
+
+  cover_letter: {
+    subject_line: row.subject_line || '',
+    cover_letter: row.cover_letter || '',
+    highlights_used: JSON.parse(row.highlights_used || '[]'),
+    tone: row.tone || 'Professional'
+  }
+};
+    
+    res.json(analysis);
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
