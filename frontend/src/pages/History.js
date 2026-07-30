@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getHistory, getAnalysis } from '../api/client';
-import { Eye, Calendar, Briefcase } from 'lucide-react';
+import { Eye, Calendar, Briefcase, Terminal, ArrowLeft, Cpu, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import BackgroundEffects from '../components/BackgroundEffects';
 
 const History = () => {
   const [analyses, setAnalyses] = useState([]);
@@ -18,7 +19,7 @@ const History = () => {
       const data = await getHistory();
       setAnalyses(data);
     } catch (error) {
-      toast.error('Failed to load history');
+      toast.error('Failed to load analysis history');
       console.error(error);
     } finally {
       setLoading(false);
@@ -31,7 +32,7 @@ const History = () => {
       sessionStorage.setItem('analysisResult', JSON.stringify(analysis));
       navigate('/results');
     } catch (error) {
-      toast.error('Failed to load analysis');
+      toast.error('Failed to load analysis details');
       console.error(error);
     }
   };
@@ -47,70 +48,113 @@ const History = () => {
     });
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-400';
-    if (score >= 60) return 'text-yellow-400';
-    return 'text-red-400';
+  const getScoreBadge = (score) => {
+    const rounded = Math.round(score || 0);
+    if (rounded >= 80) return 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10 shadow-neon-emerald';
+    if (rounded >= 60) return 'text-amber-400 border-amber-500/40 bg-amber-500/10';
+    return 'text-rose-400 border-rose-500/40 bg-rose-500/10';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
-        <div className="text-gray-400">Loading history...</div>
+      <div className="min-h-screen bg-space-950 flex flex-col items-center justify-center relative overflow-hidden">
+        <BackgroundEffects />
+        <div className="relative z-10 text-center">
+          <Cpu className="w-12 h-12 text-cyan-400 animate-pulse mx-auto mb-4" />
+          <p className="text-sm font-mono text-cyan-300">Fetching Analysis History Logs...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-navy-900 pt-8 pb-16 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-heading font-bold mb-8">Analysis History</h1>
+    <div className="min-h-screen bg-space-950 pt-8 pb-20 px-4 relative overflow-hidden">
+      <BackgroundEffects />
 
+      <div className="max-w-5xl mx-auto relative z-10">
+
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 pb-6 border-b border-white/10">
+          <div>
+            <div className="flex items-center space-x-2 mb-1">
+              <Terminal className="w-6 h-6 text-purple-400" />
+              <h1 className="text-3xl font-heading font-extrabold text-white">Analysis History Logs</h1>
+            </div>
+            <p className="text-xs font-mono text-slate-400">
+              Audit logs of previously evaluated developer resumes
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl glass-pill text-slate-300 hover:text-white hover:border-cyan-500/40 transition-all font-mono text-xs shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 text-cyan-400" />
+            <span>Return to Command Center</span>
+          </button>
+        </div>
+
+        {/* History List */}
         {analyses.length === 0 ? (
-          <div className="bg-navy-800 rounded-xl p-12 border border-navy-700 text-center">
-            <p className="text-gray-400 text-lg">No analyses yet</p>
-            <p className="text-gray-500 mt-2">Upload a resume to get started</p>
+          <div className="glass-card rounded-3xl p-12 text-center border border-white/10">
+            <Sparkles className="w-12 h-12 text-cyan-400 mx-auto mb-4 animate-bounce" />
+            <p className="text-lg font-heading font-bold text-white mb-1">No Past Analyses Logged</p>
+            <p className="text-xs font-mono text-slate-400 mb-6">Upload a resume in the Command Center to record audit history.</p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-space-950 font-heading font-bold text-sm shadow-neon-cyan transition-all"
+            >
+              Analyze Your First Resume
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
             {analyses.map((analysis) => (
               <div
                 key={analysis.id}
-                className="bg-navy-800 rounded-lg p-6 border border-navy-700 hover:border-indigo-500 transition-colors"
+                className="glass-card-hover p-6 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4 mb-2">
-                      <Briefcase className="w-5 h-5 text-indigo-500" />
-                      <h3 className="font-semibold text-lg">{analysis.job_title}</h3>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                      <Briefcase className="w-5 h-5" />
                     </div>
-                    <div className="flex items-center space-x-4 text-gray-400 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatDate(analysis.created_at)}</span>
-                      </div>
-                    </div>
+                    <h3 className="font-heading font-bold text-lg text-white">
+                      {analysis.job_title || 'Software Position'}
+                    </h3>
                   </div>
-                  <div className="flex items-center space-x-6">
-                    <div className="text-right">
-                      <p className="text-gray-400 text-sm">Match Score</p>
-                      <p className={`text-2xl font-bold ${getScoreColor(analysis.overall_score)}`}>
-                        {Math.round(analysis.overall_score)}%
-                      </p>
+
+                  <div className="flex items-center space-x-4 text-xs font-mono text-slate-400 ml-1">
+                    <div className="flex items-center space-x-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>{formatDate(analysis.created_at)}</span>
                     </div>
-                    <button
-                      onClick={() => handleView(analysis.id)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>View</span>
-                    </button>
+                    <span>•</span>
+                    <span className="text-slate-500">ID: #{analysis.id}</span>
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end space-x-6">
+                  <div className="text-right">
+                    <p className="text-[10px] font-mono uppercase text-slate-400 mb-0.5">Match Score</p>
+                    <span className={`px-3 py-1 rounded-full text-base font-heading font-bold border ${getScoreBadge(analysis.overall_score)}`}>
+                      {Math.round(analysis.overall_score || 0)}%
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleView(analysis.id)}
+                    className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all shadow-neon-cyan"
+                  >
+                    <Eye className="w-4 h-4 text-cyan-400" />
+                    <span>Inspect</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
+
       </div>
     </div>
   );

@@ -1,68 +1,77 @@
-  import { useState } from 'react';
-  import { analyzeResume } from '../api/client';
-  import { useNavigate } from 'react-router-dom';
-  import toast from 'react-hot-toast';
+import { useState } from 'react';
+import { analyzeResume } from '../api/client';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
-  export const useAnalyze = () => {
-    const [loading, setLoading] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const [currentStep, setCurrentStep] = useState('');
-    const navigate = useNavigate();
+export const useAnalyze = () => {
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
+  const navigate = useNavigate();
 
-    const steps = [
-      'Parsing resume...',
-      'Running ATS check...',
-      'Finding skill gaps...',
-      'Generating rewrites...',
-      'Writing cover letter...'
-    ];
+  const steps = [
+    'Parsing resume file...',
+    'Running ATS compatibility check...',
+    'Finding skill gaps & readiness...',
+    'Generating AI bullet rewrites...',
+    'Writing tailored cover letter...'
+  ];
 
-    const analyze = async (file, jobDescription) => {
-      setLoading(true);
-      setProgress(0);
-      setCurrentStep(steps[0]);
+  const analyze = async (file, jobDescription) => {
+    console.log('[DEBUG useAnalyze] Starting analyze workflow...');
+    console.log('[DEBUG useAnalyze] Selected File:', file?.name, 'Size:', file?.size, 'Type:', file?.type);
+    console.log('[DEBUG useAnalyze] Job Description Length:', jobDescription?.length);
 
-      try {
-        // Simulate progress updates
-        let stepIndex = 0;
-        const progressInterval = setInterval(() => {
-          if (stepIndex < steps.length) {
-            setCurrentStep(steps[stepIndex]);
-            setProgress(((stepIndex + 1) / steps.length) * 100);
-            stepIndex++;
-          }
-        }, 2000);
-        const result = await analyzeResume(file, jobDescription);
-        if (result.success === false) {
-  toast.error(result.error);
-  return;
-}
+    setLoading(true);
+    setProgress(5);
+    setCurrentStep(steps[0]);
 
-
-  console.log("API RESULT:");
-  console.log(result);
-  console.log(JSON.stringify(result, null, 2));
-
-        
-
-        
-        clearInterval(progressInterval);
-        setProgress(100);
-        
-        // Store result in sessionStorage for Results page
-        sessionStorage.setItem('analysisResult', JSON.stringify(result));
-        
-        toast.success('Analysis complete!');
-        navigate('/results');
-      } catch (error) {
-        toast.error('Analysis failed. Please try again.');
-        console.error('Analysis error:', error);
-      } finally {
-        setLoading(false);
-        setProgress(0);
-        setCurrentStep('');
+    let stepIndex = 0;
+    const progressInterval = setInterval(() => {
+      if (stepIndex < steps.length) {
+        setCurrentStep(steps[stepIndex]);
+        setProgress(((stepIndex + 1) / steps.length) * 90);
+        stepIndex++;
       }
-    };
+    }, 2000);
 
-    return { analyze, loading, progress, currentStep };
+    try {
+      console.log('[DEBUG useAnalyze] Triggering analyzeResume API call...');
+      const result = await analyzeResume(file, jobDescription);
+      console.log('[DEBUG useAnalyze] API call returned successfully:', result);
+
+      clearInterval(progressInterval);
+
+      if (result && result.success === false) {
+        console.warn('[DEBUG useAnalyze] Server returned error state:', result.error);
+        toast.error(result.error || 'Resume parsing failed.');
+        return;
+      }
+
+      setProgress(100);
+
+      // Store result in sessionStorage for Results page
+      sessionStorage.setItem('analysisResult', JSON.stringify(result));
+      console.log('[DEBUG useAnalyze] Stored result in sessionStorage. Navigating to /results...');
+
+      toast.success('Analysis complete!');
+      navigate('/results');
+    } catch (error) {
+      clearInterval(progressInterval);
+      console.error('[DEBUG useAnalyze] Exception encountered during analysis:');
+      console.error('  - Error Message:', error.message);
+      console.error('  - Response Status:', error.response?.status);
+      console.error('  - Response Data:', error.response?.data);
+      console.error('  - Full Error Object:', error);
+
+      const errorMessage = error.response?.data?.error || error.message || 'Analysis failed. Please try again.';
+      toast.error(`Analysis failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+      setProgress(0);
+      setCurrentStep('');
+    }
   };
+
+  return { analyze, loading, progress, currentStep };
+};
