@@ -1,9 +1,14 @@
 const profiles = require("./mockProfiles");
 
-// Function to calculate trust score
+// Function to calculate trust score (Case-Insensitive)
 function calculateTrustScore(resumeSkills, githubSkills) {
+
+    // Convert GitHub skills to lowercase once
+    const githubSkillsLower = githubSkills.map(skill => skill.toLowerCase());
+
+    // Compare skills without considering case
     const verifiedSkills = resumeSkills.filter(skill =>
-        githubSkills.includes(skill)
+        githubSkillsLower.includes(skill.toLowerCase())
     );
 
     const score = Math.round(
