@@ -13,20 +13,19 @@ const RoadmapItem = ({ gap }) => {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <Target className="w-5 h-5 text-purple-400" />
-          <h4 className="font-heading font-bold text-lg text-white">{gap.skill}</h4>
+          <h4 className="font-heading font-bold text-lg text-white">{gap?.skill}</h4>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-mono font-semibold border ${priorityStyles[gap.priority] || priorityStyles.Medium
-          }`}>
-          {gap.priority} Priority
+        <span className={`px-3 py-1 rounded-full text-xs font-mono font-semibold border ${priorityStyles[gap?.priority] || priorityStyles.Medium}`}>
+          {gap?.priority || 'Medium'} Priority
         </span>
       </div>
 
       <div className="flex items-center space-x-2 text-xs font-mono text-slate-400 mb-4">
         <Clock className="w-3.5 h-3.5 text-cyan-400" />
-        <span>Estimated Mastery Time: {gap.estimated_time || '1-2 weeks'}</span>
+        <span>Estimated Mastery Time: {gap?.estimated_time || '1-2 weeks'}</span>
       </div>
 
-      {gap.resources && gap.resources.length > 0 && (
+      {gap?.resources && gap.resources.length > 0 && (
         <div className="pt-3 border-t border-white/10 space-y-2">
           <p className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
             Curated Learning Resources:

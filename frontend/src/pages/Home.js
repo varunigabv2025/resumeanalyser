@@ -66,14 +66,14 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-space-950 text-slate-100 relative overflow-hidden">
       {/* Dynamic Canvas Background & Lighting Orbs */}
-      <BackgroundEffects />
+      {BackgroundEffects && <BackgroundEffects />}
 
       {/* Hero Section with Cinematic AI Core */}
       <div className="relative z-10 pt-12 pb-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
 
           {/* Top Announcement Pill */}
-          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-pill border border-cyan-500/30 text-xs font-mono mb-8 shadow-neon-cyan animate-float">
+          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-pill border border-cyan-500/30 text-xs font-mono mb-8 shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] animate-float">
             <Sparkles className="w-4 h-4 text-cyan-400 animate-spin-slow" />
             <span className="text-cyan-300 font-semibold tracking-wide">
               SkillBridge AI v2.0 Platform Live
@@ -102,7 +102,7 @@ const Home = () => {
             <div className="absolute w-[440px] h-[440px] rounded-full border border-purple-500/20 animate-pulse" />
 
             {/* Central Holographic AI Orb */}
-            <div className="relative z-10 w-44 h-44 rounded-full bg-gradient-to-tr from-cyan-500/30 via-blue-600/20 to-purple-600/30 p-[2px] shadow-neon-cyan animate-float">
+            <div className="relative z-10 w-44 h-44 rounded-full bg-gradient-to-tr from-cyan-500/30 via-blue-600/20 to-purple-600/30 p-[2px] shadow-[0_0_25px_-5px_rgba(6,182,212,0.5)] animate-float">
               <div className="w-full h-full bg-space-950 rounded-full flex flex-col items-center justify-center p-4 backdrop-blur-xl border border-cyan-500/40">
                 <Cpu className="w-12 h-12 text-cyan-400 mb-2 animate-pulse" />
                 <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase tracking-widest">
@@ -146,7 +146,7 @@ const Home = () => {
       </div>
 
       {/* AI Agents Live Status Bar */}
-      <AiAgentsBar />
+      {AiAgentsBar && <AiAgentsBar />}
 
       {/* Main Input Command Center */}
       <div className="max-w-6xl mx-auto px-4 pb-16 relative z-10">
@@ -155,9 +155,6 @@ const Home = () => {
           {/* Futuristic Resume Upload Dropzone */}
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
 
-            {/* Scan Beam Effect */}
-            <div className="absolute inset-0 bg-scanline pointer-events-none opacity-40" />
-
             <h2 className="text-xl font-heading font-bold mb-4 flex items-center text-white">
               <Upload className="w-5 h-5 mr-3 text-cyan-400" />
               1. Upload Developer Resume
@@ -165,16 +162,17 @@ const Home = () => {
 
             <div
               {...getRootProps()}
-              className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 overflow-hidden ${isDragActive
-                ? 'border-cyan-400 bg-cyan-500/10 shadow-neon-cyan scale-[1.01]'
-                : 'border-white/15 bg-space-950/60 hover:border-cyan-500/50 hover:bg-space-900/60'
-                }`}
+              className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 overflow-hidden ${
+                isDragActive
+                  ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_20px_-3px_rgba(6,182,212,0.4)] scale-[1.01]'
+                  : 'border-white/15 bg-space-950/60 hover:border-cyan-500/50 hover:bg-space-900/60'
+              }`}
             >
               <input {...getInputProps()} />
 
               {file ? (
                 <div className="flex flex-col items-center justify-center space-y-3 py-4">
-                  <div className="p-4 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-neon-cyan">
+                  <div className="p-4 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]">
                     <FileText className="w-10 h-10" />
                   </div>
                   <div>
@@ -229,7 +227,6 @@ const Home = () => {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Big Glow Analyze Action Button */}
@@ -237,7 +234,7 @@ const Home = () => {
           <button
             onClick={handleAnalyze}
             disabled={!file || !jobDescription.trim()}
-            className="group relative inline-flex items-center justify-center px-10 py-5 rounded-2xl font-heading font-extrabold text-lg text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.03] shadow-neon-cyan overflow-hidden"
+            className="group relative inline-flex items-center justify-center px-10 py-5 rounded-2xl font-heading font-extrabold text-lg text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.03] shadow-[0_0_25px_-5px_rgba(6,182,212,0.5)] overflow-hidden"
           >
             <Zap className="w-6 h-6 mr-3 text-cyan-300 group-hover:animate-bounce" />
             <span>Analyze Resume & Verify Profile</span>
@@ -245,22 +242,23 @@ const Home = () => {
           </button>
 
           {/* Quick Dataset Explorer Trigger Button */}
-          <div className="mt-6">
-            <button
-              onClick={() => setShowExplorer(!showExplorer)}
-              className="inline-flex items-center space-x-2 text-xs font-mono text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
-            >
-              <Cpu className="w-4 h-4" />
-              <span>{showExplorer ? 'Hide Shared Mock Dataset Explorer' : 'Explore 20 Shared Developer Mock Profiles & SkillSwap Pairs'}</span>
-            </button>
-          </div>
+          {SharedProfilesExplorer && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowExplorer(!showExplorer)}
+                className="inline-flex items-center space-x-2 text-xs font-mono text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
+              >
+                <Cpu className="w-4 h-4" />
+                <span>{showExplorer ? 'Hide Shared Mock Dataset Explorer' : 'Explore 20 Shared Developer Mock Profiles & SkillSwap Pairs'}</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Shared Mock Profiles Explorer Component */}
-        {showExplorer && (
+        {showExplorer && SharedProfilesExplorer && (
           <SharedProfilesExplorer onSelectProfile={handleSelectMockProfile} />
         )}
-
       </div>
 
       {/* AI Platform Capabilities Section */}

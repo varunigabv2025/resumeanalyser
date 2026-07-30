@@ -62,7 +62,6 @@ export const useAnalyze = () => {
       console.error('  - Error Message:', error.message);
       console.error('  - Response Status:', error.response?.status);
       console.error('  - Response Data:', error.response?.data);
-      console.error('  - Full Error Object:', error);
 
       const errorMessage = error.response?.data?.error || error.message || 'Analysis failed. Please try again.';
       toast.error(`Analysis failed: ${errorMessage}`);

@@ -22,7 +22,7 @@ const LoadingScreen = ({ progress, currentStep }) => {
           </div>
 
           {/* Central AI Core Icon */}
-          <div className="relative z-10 p-4 rounded-2xl bg-space-950 border border-cyan-500/50 shadow-neon-cyan">
+          <div className="relative z-10 p-4 rounded-2xl bg-space-950 border border-cyan-500/50 shadow-[0_0_20px_-3px_rgba(6,182,212,0.5)]">
             <Cpu className="w-10 h-10 text-cyan-400 animate-pulse" />
           </div>
         </div>
@@ -31,7 +31,7 @@ const LoadingScreen = ({ progress, currentStep }) => {
         <div className="flex items-center justify-center space-x-2 mb-2">
           <Sparkles className="w-4 h-4 text-cyan-400 animate-spin-slow" />
           <h2 className="text-xl font-heading font-extrabold text-white tracking-tight">
-            SkillHive AI Core Executing
+            SkillBridge AI Core Executing
           </h2>
         </div>
 
@@ -45,7 +45,7 @@ const LoadingScreen = ({ progress, currentStep }) => {
         <div className="space-y-2 mb-6">
           <div className="w-full h-3 bg-space-900 rounded-full p-0.5 border border-white/10 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 rounded-full transition-all duration-500 ease-out shadow-neon-cyan relative"
+              className="h-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] relative"
               style={{ width: `${progress}%` }}
             >
               <div className="absolute top-0 bottom-0 right-0 w-2 bg-white rounded-full animate-pulse" />

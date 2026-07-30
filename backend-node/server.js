@@ -6,6 +6,7 @@ const multer = require('multer');
 const db = require('./database');
 const { extractResumeText } = require('./resumeParser');
 const { runAllAnalyses } = require('./aiAnalyzer');
+const { analyzeGithubProfile } = require('./githubAnalyzer');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -69,12 +70,12 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
     // Extract text from resume
     const resumeText = await extractResumeText(file.buffer, file.mimetype);
     if (typeof resumeText !== "string") {
-  return res.status(200).json(resumeText);
-}
+      return res.status(200).json(resumeText);
+    }
 
     console.log("========== RESUME ==========");
-console.log(resumeText);
-console.log("============================");
+    console.log(resumeText);
+    console.log("============================");
     
     // Extract candidate name and job title
     const candidateName = extractCandidateName(resumeText);
@@ -108,23 +109,23 @@ console.log("============================");
       analysisResults.core_match?.summary || '',
       analysisResults.ats?.ats_score || 0,
       JSON.stringify(analysisResults.ats?.parsing_issues || []),
-JSON.stringify(analysisResults.ats?.detected_sections || []),
-JSON.stringify(analysisResults.ats?.missing_sections || []),
-JSON.stringify(analysisResults.ats?.keyword_density || {}),
-JSON.stringify(analysisResults.ats?.formatting_warnings || []),
-analysisResults.ats?.ats_verdict || '',
+      JSON.stringify(analysisResults.ats?.detected_sections || []),
+      JSON.stringify(analysisResults.ats?.missing_sections || []),
+      JSON.stringify(analysisResults.ats?.keyword_density || {}),
+      JSON.stringify(analysisResults.ats?.formatting_warnings || []),
+      analysisResults.ats?.ats_verdict || '',
 
-JSON.stringify(analysisResults.rewrites?.rewrites || []),
+      JSON.stringify(analysisResults.rewrites?.rewrites || []),
 
-analysisResults.gaps?.readiness_percentage || 0,
-analysisResults.gaps?.gap_summary || '',
-JSON.stringify(analysisResults.gaps?.skill_gaps || []),
-JSON.stringify(analysisResults.gaps?.milestones || []),
+      analysisResults.gaps?.readiness_percentage || 0,
+      analysisResults.gaps?.gap_summary || '',
+      JSON.stringify(analysisResults.gaps?.skill_gaps || []),
+      JSON.stringify(analysisResults.gaps?.milestones || []),
 
-analysisResults.cover_letter?.subject_line || '',
-analysisResults.cover_letter?.cover_letter || '',
-JSON.stringify(analysisResults.cover_letter?.highlights_used || []),
-analysisResults.cover_letter?.tone || ''
+      analysisResults.cover_letter?.subject_line || '',
+      analysisResults.cover_letter?.cover_letter || '',
+      JSON.stringify(analysisResults.cover_letter?.highlights_used || []),
+      analysisResults.cover_letter?.tone || ''
     ];
     
     db.run(insertQuery, values, function(err) {
@@ -140,7 +141,7 @@ analysisResults.cover_letter?.tone || ''
         ...analysisResults
       };
       console.log("FINAL RESPONSE:");
-console.log(JSON.stringify(response, null, 2));
+      console.log(JSON.stringify(response, null, 2));
       
       res.json(response);
 
@@ -192,52 +193,70 @@ app.get('/api/history/:id', (req, res) => {
     if (!row) {
       return res.status(404).json({ error: 'Analysis not found' });
     }
-  const analysis = {
-  id: row.id,
-  created_at: row.created_at,
-  job_title: row.job_title,
+    const analysis = {
+      id: row.id,
+      created_at: row.created_at,
+      job_title: row.job_title,
 
-  core_match: {
-    overall_score: row.overall_score,
-    section_scores: JSON.parse(row.section_scores || '{}'),
-    matched_skills: JSON.parse(row.matched_skills || '[]'),
-    missing_skills: JSON.parse(row.missing_skills || '[]'),
-    improvement_tips: JSON.parse(row.improvement_tips || '[]'),
-    keyword_gaps: JSON.parse(row.keyword_gaps || '[]'),
-    summary: row.summary || ''
-  },
+      core_match: {
+        overall_score: row.overall_score,
+        section_scores: JSON.parse(row.section_scores || '{}'),
+        matched_skills: JSON.parse(row.matched_skills || '[]'),
+        missing_skills: JSON.parse(row.missing_skills || '[]'),
+        improvement_tips: JSON.parse(row.improvement_tips || '[]'),
+        keyword_gaps: JSON.parse(row.keyword_gaps || '[]'),
+        summary: row.summary || ''
+      },
 
-  ats: {
-    ats_score: row.ats_score,
-    parsing_issues: JSON.parse(row.parsing_issues || '[]'),
-    detected_sections: JSON.parse(row.detected_sections || '[]'),
-    missing_sections: JSON.parse(row.missing_sections || '[]'),
-    keyword_density: JSON.parse(row.keyword_density || '{}'),
-    formatting_warnings: JSON.parse(row.formatting_warnings || '[]'),
-    ats_verdict: row.ats_verdict || ''
-  },
+      ats: {
+        ats_score: row.ats_score,
+        parsing_issues: JSON.parse(row.parsing_issues || '[]'),
+        detected_sections: JSON.parse(row.detected_sections || '[]'),
+        missing_sections: JSON.parse(row.missing_sections || '[]'),
+        keyword_density: JSON.parse(row.keyword_density || '{}'),
+        formatting_warnings: JSON.parse(row.formatting_warnings || '[]'),
+        ats_verdict: row.ats_verdict || ''
+      },
 
-  rewrites: {
-    rewrites: JSON.parse(row.rewrites || '[]')
-  },
+      rewrites: {
+        rewrites: JSON.parse(row.rewrites || '[]')
+      },
 
-  gaps: {
-    readiness_percentage: row.readiness_percentage,
-    gap_summary: row.gap_summary || '',
-    skill_gaps: JSON.parse(row.skill_gaps || '[]'),
-    milestones: JSON.parse(row.milestones || '[]')
-  },
+      gaps: {
+        readiness_percentage: row.readiness_percentage,
+        gap_summary: row.gap_summary || '',
+        skill_gaps: JSON.parse(row.skill_gaps || '[]'),
+        milestones: JSON.parse(row.milestones || '[]')
+      },
 
-  cover_letter: {
-    subject_line: row.subject_line || '',
-    cover_letter: row.cover_letter || '',
-    highlights_used: JSON.parse(row.highlights_used || '[]'),
-    tone: row.tone || 'Professional'
-  }
-};
+      cover_letter: {
+        subject_line: row.subject_line || '',
+        cover_letter: row.cover_letter || '',
+        highlights_used: JSON.parse(row.highlights_used || '[]'),
+        tone: row.tone || 'Professional'
+      }
+    };
     
     res.json(analysis);
   });
+});
+
+// POST /api/github/analyze
+app.post('/api/github/analyze', async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    const result = await analyzeGithubProfile(username);
+
+    if (result.error) {
+      return res.status(result.status || 400).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('GitHub analysis error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Start server

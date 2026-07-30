@@ -12,7 +12,7 @@ const Navbar = () => {
 
           {/* Brand Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600 p-[1px] shadow-neon-cyan transition-transform duration-300 group-hover:scale-105">
+            <div className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600 p-[1px] shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] transition-transform duration-300 group-hover:scale-105">
               <div className="w-full h-full bg-space-950 rounded-[11px] flex items-center justify-center">
                 <Cpu className="w-6 h-6 text-cyan-400 animate-pulse" />
               </div>
@@ -20,14 +20,14 @@ const Navbar = () => {
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-heading font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-400">
-                  SkillHive<span className="text-cyan-400">.AI</span>
+                  SKILLBRIDGE <span className="text-cyan-400">AI</span>
                 </span>
                 <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full">
                   v2.0
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-mono tracking-wide hidden sm:block">
-                Developer Intelligence Engine
+                Developer Intelligence & Skill Verification
               </p>
             </div>
           </Link>
@@ -41,7 +41,7 @@ const Navbar = () => {
             <span className="text-emerald-400 font-medium tracking-wide">SYSTEM ONLINE</span>
             <span className="text-slate-500">|</span>
             <span className="text-slate-300 flex items-center">
-              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Trust Core Active
+              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Trust Engine Active
             </span>
           </div>
 
@@ -49,10 +49,11 @@ const Navbar = () => {
           <nav className="flex items-center space-x-2 sm:space-x-4">
             <Link
               to="/"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${location.pathname === '/'
-                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-neon-cyan'
-                : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                location.pathname === '/'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
               <Sparkles className="w-4 h-4 text-cyan-400" />
               <span>Command Center</span>
@@ -60,10 +61,11 @@ const Navbar = () => {
 
             <Link
               to="/history"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${location.pathname === '/history'
-                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-neon-cyan'
-                : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                location.pathname === '/history'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
               <History className="w-4 h-4 text-purple-400" />
               <span>Analysis Logs</span>

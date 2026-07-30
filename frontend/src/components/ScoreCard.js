@@ -5,13 +5,13 @@ const ScoreCard = ({ title, score, color = 'cyan' }) => {
     indigo: {
       border: 'border-blue-500/30',
       text: 'text-blue-400',
-      glow: 'shadow-neon-blue',
+      glow: 'shadow-[0_0_20px_-3px_rgba(59,130,246,0.4)]',
       stroke: '#3B82F6'
     },
     green: {
       border: 'border-emerald-500/30',
       text: 'text-emerald-400',
-      glow: 'shadow-neon-emerald',
+      glow: 'shadow-[0_0_20px_-3px_rgba(16,185,129,0.4)]',
       stroke: '#10B981'
     },
     yellow: {
@@ -29,7 +29,7 @@ const ScoreCard = ({ title, score, color = 'cyan' }) => {
     cyan: {
       border: 'border-cyan-500/30',
       text: 'text-cyan-400',
-      glow: 'shadow-neon-cyan',
+      glow: 'shadow-[0_0_20px_-3px_rgba(6,182,212,0.4)]',
       stroke: '#06B6D4'
     }
   };

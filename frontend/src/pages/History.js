@@ -17,7 +17,7 @@ const History = () => {
   const loadHistory = async () => {
     try {
       const data = await getHistory();
-      setAnalyses(data);
+      setAnalyses(data || []);
     } catch (error) {
       toast.error('Failed to load analysis history');
       console.error(error);
@@ -38,6 +38,7 @@ const History = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -50,7 +51,7 @@ const History = () => {
 
   const getScoreBadge = (score) => {
     const rounded = Math.round(score || 0);
-    if (rounded >= 80) return 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10 shadow-neon-emerald';
+    if (rounded >= 80) return 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]';
     if (rounded >= 60) return 'text-amber-400 border-amber-500/40 bg-amber-500/10';
     return 'text-rose-400 border-rose-500/40 bg-rose-500/10';
   };
@@ -58,7 +59,7 @@ const History = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-space-950 flex flex-col items-center justify-center relative overflow-hidden">
-        <BackgroundEffects />
+        {BackgroundEffects && <BackgroundEffects />}
         <div className="relative z-10 text-center">
           <Cpu className="w-12 h-12 text-cyan-400 animate-pulse mx-auto mb-4" />
           <p className="text-sm font-mono text-cyan-300">Fetching Analysis History Logs...</p>
@@ -69,7 +70,7 @@ const History = () => {
 
   return (
     <div className="min-h-screen bg-space-950 pt-8 pb-20 px-4 relative overflow-hidden">
-      <BackgroundEffects />
+      {BackgroundEffects && <BackgroundEffects />}
 
       <div className="max-w-5xl mx-auto relative z-10">
 
@@ -102,7 +103,7 @@ const History = () => {
             <p className="text-xs font-mono text-slate-400 mb-6">Upload a resume in the Command Center to record audit history.</p>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-space-950 font-heading font-bold text-sm shadow-neon-cyan transition-all"
+              className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-space-950 font-heading font-bold text-sm shadow-[0_0_20px_-3px_rgba(6,182,212,0.5)] transition-all"
             >
               Analyze Your First Resume
             </button>
@@ -144,7 +145,7 @@ const History = () => {
 
                   <button
                     onClick={() => handleView(analysis.id)}
-                    className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all shadow-neon-cyan"
+                    className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]"
                   >
                     <Eye className="w-4 h-4 text-cyan-400" />
                     <span>Inspect</span>
@@ -154,7 +155,6 @@ const History = () => {
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

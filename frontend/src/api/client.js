@@ -18,6 +18,12 @@ export const analyzeResume = async (file, jobDescription) => {
   return response.data;
 };
 
+export const analyzeGithub = async (githubUrl) => {
+  console.log(`[DEBUG client.js] Analyzing GitHub Profile: ${githubUrl}...`);
+  const response = await api.post('/api/github/analyze', { github_url: githubUrl });
+  return response.data;
+};
+
 export const getHistory = async () => {
   console.log(`[DEBUG client.js] Fetching history from ${API_BASE_URL}/api/history...`);
   const response = await api.get('/api/history');
