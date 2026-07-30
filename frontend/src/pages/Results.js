@@ -9,7 +9,7 @@ import RoadmapItem from '../components/RoadmapItem';
 import CoverLetterCard from '../components/CoverLetterCard';
 import BackgroundEffects from '../components/BackgroundEffects';
 import { mergeProfile } from '../utils/profileMerger';
-import { useAnalysisContext } = require('../context/AnalysisContext');
+import { useAnalysisContext } from '../context/AnalysisContext';
 
 const Results = () => {
   const [activeTab, setActiveTab] = useState('overview');
