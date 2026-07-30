@@ -101,12 +101,17 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
       }
     }
     
-    // Calculate Trust Score & SkillSwap Matches
+    // Calculate Multi-Dimensional Trust Score & SkillSwap Matches
     const matchedSkills = analysisResults.core_match?.matched_skills || [];
     const missingSkills = analysisResults.core_match?.missing_skills || [];
     const githubSkills = githubAnalysis?.skills || [];
 
-    const trustScoreResult = calculateTrustScore(matchedSkills, githubSkills);
+    const trustScoreResult = calculateTrustScore(matchedSkills, githubSkills, {
+      githubAnalysis,
+      overallScore: analysisResults.core_match?.overall_score,
+      atsScore: analysisResults.ats?.ats_score
+    });
+
     const skillSwapMatches = findMatchesForCandidate(matchedSkills, missingSkills, candidateName);
 
     // Save to database
@@ -170,7 +175,7 @@ app.post('/api/analyze', upload.single('resume_file'), async (req, res) => {
         skill_swap: skillSwapMatches,
         ...analysisResults
       };
-      console.log("FINAL RESPONSE INCLUDING TRUST SCORE & SKILLSWAP:");
+      console.log("FINAL ANALYSIS RESPONSE GENERATED:");
       console.log(JSON.stringify(response, null, 2));
       
       res.json(response);

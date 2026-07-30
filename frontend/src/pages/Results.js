@@ -167,61 +167,14 @@ const Results = () => {
     </div>
   );
 
-  const trustScoreData = result?.trust_score || {
-    score: Math.round(((unifiedProfile.verifiedSkills?.length || 0) / Math.max(1, (coreMatch?.matched_skills?.length || 1))) * 100),
-    category: (unifiedProfile.verifiedSkills?.length || 0) >= 3 ? 'High' : (unifiedProfile.verifiedSkills?.length || 0) >= 1 ? 'Medium' : 'Low',
-    unlocked: (unifiedProfile.verifiedSkills?.length || 0) >= 1
-  };
-
-  const skillSwapMatches = result?.skill_swap?.length > 0 ? result.skill_swap : [
-    {
-      matchId: 'match-1',
-      name: 'Elena Rostova',
-      title: 'Senior Backend Engineer',
-      compatibilityScore: 94,
-      youCanTeach: coreMatch?.matched_skills?.slice(0, 2) || ['React'],
-      theyCanTeach: coreMatch?.missing_skills?.slice(0, 2) || ['Docker', 'AWS'],
-      reason: 'Mutual skill exchange opportunity identified.'
-    },
-    {
-      matchId: 'match-2',
-      name: 'Marcus Vance',
-      title: 'DevOps & Cloud Specialist',
-      compatibilityScore: 88,
-      youCanTeach: coreMatch?.matched_skills?.slice(1, 3) || ['Node.js'],
-      theyCanTeach: coreMatch?.missing_skills?.slice(1, 3) || ['Kubernetes'],
-      reason: 'High compatibility match for cloud infrastructure upskilling.'
-    }
-  ];
-
   const renderUnified = () => (
     <div className="space-y-6 fade-in">
-      {/* Trust Score Radar & Engine Status */}
-      <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
-          <div className="flex items-center space-x-3">
-            <ShieldCheck className="w-7 h-7 text-cyan-400" />
-            <div>
-              <h2 className="text-xl font-heading font-bold text-white">Trust Engine Audit & Verification</h2>
-              <p className="text-xs font-mono text-cyan-300/80">GitHub Code Proof & Resume Claims Verification</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
-              trustScoreData.category === 'High' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]' :
-              trustScoreData.category === 'Medium' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
-              trustScoreData.category === 'Borderline' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-              'bg-rose-500/20 text-rose-300 border-rose-500/40'
-            }`}>
-              {trustScoreData.category.toUpperCase()} TRUST ({trustScoreData.score}%)
-            </span>
-
-            <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
-              trustScoreData.unlocked ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-slate-800 text-slate-400 border-slate-700'
-            }`}>
-              {trustScoreData.unlocked ? 'SkillSwap: Unlocked ✓' : 'SkillSwap: Locked 🔒'}
-            </span>
+      <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10">
+        <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-white/10">
+          <ShieldCheck className="w-6 h-6 text-cyan-400" />
+          <div>
+            <h2 className="text-xl font-heading font-bold text-white">Unified Profile Layer</h2>
+            <p className="text-xs font-mono text-cyan-300/80">Aggregated resume analysis & GitHub code evidence</p>
           </div>
         </div>
 
@@ -275,77 +228,6 @@ const Results = () => {
               </li>
             ))}
           </ul>
-        </div>
-      </div>
-
-      {/* SkillSwap Peer Mentorship Engine Section */}
-      <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
-          <div>
-            <h3 className="text-xl font-heading font-bold text-white flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              <span>SkillSwap Peer Mentorship Matches</span>
-            </h3>
-            <p className="text-xs font-mono text-slate-400">AI-matched peer developers for reciprocal skill exchange</p>
-          </div>
-          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            {skillSwapMatches.length} Matches Found
-          </span>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          {skillSwapMatches.map((match, idx) => (
-            <div key={idx} className="p-5 rounded-2xl bg-space-950/80 border border-white/10 flex flex-col justify-between space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-heading font-bold text-base text-white">{match.name}</h4>
-                    <p className="text-xs font-mono text-cyan-400">{match.title}</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30">
-                    {match.compatibilityScore}% Match
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-300 font-sans mb-3 leading-relaxed">{match.reason}</p>
-
-                <div className="space-y-2 text-xs font-mono">
-                  {match.youCanTeach?.length > 0 && (
-                    <div>
-                      <span className="text-emerald-400 font-bold block mb-1">You Can Mentor Them In:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {match.youCanTeach.map((s, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {match.theyCanTeach?.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-cyan-400 font-bold block mb-1">They Can Mentor You In:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {match.theyCanTeach.map((s, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <button
-                onClick={() => toast.success(`SkillSwap invite request sent to ${match.name}!`)}
-                className="w-full py-2 px-4 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-mono font-semibold transition-all"
-              >
-                Connect for SkillSwap
-              </button>
-            </div>
-          ))}
         </div>
       </div>
     </div>
