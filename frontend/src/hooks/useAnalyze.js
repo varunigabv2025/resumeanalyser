@@ -2,19 +2,21 @@ import { useState } from 'react';
 import { analyzeResume } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAnalysisContext } from '../context/AnalysisContext';
 
 export const useAnalyze = () => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const navigate = useNavigate();
+  const { setAnalysisData } = useAnalysisContext();
 
   const steps = [
     'Parsing resume file...',
-    'Running ATS compatibility check...',
-    'Finding skill gaps & readiness...',
-    'Generating AI bullet rewrites...',
-    'Writing tailored cover letter...'
+    'Running GitHub code verification...',
+    'Executing ATS & core match simulation...',
+    'Calculating multi-dimensional Trust Score...',
+    'Generating AI Roadmap, Cover Letter & Interview Prep...'
   ];
 
   const analyze = async (file, jobDescription, githubUrl) => {
@@ -51,9 +53,10 @@ export const useAnalyze = () => {
 
       setProgress(100);
 
-      // Store result in sessionStorage for Results page
+      // Single Source of Truth Update
+      setAnalysisData(result);
       sessionStorage.setItem('analysisResult', JSON.stringify(result));
-      console.log('[DEBUG useAnalyze] Stored result in sessionStorage. Navigating to /results...');
+      console.log('[DEBUG useAnalyze] Stored result in central AnalysisContext & sessionStorage. Navigating to /results...');
 
       toast.success('Analysis complete!');
       navigate('/results');

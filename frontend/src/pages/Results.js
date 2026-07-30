@@ -9,28 +9,34 @@ import RoadmapItem from '../components/RoadmapItem';
 import CoverLetterCard from '../components/CoverLetterCard';
 import BackgroundEffects from '../components/BackgroundEffects';
 import { mergeProfile } from '../utils/profileMerger';
+import { useAnalysisContext } = require('../context/AnalysisContext');
 
 const Results = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [result, setResult] = useState(null);
   const [openQuestionIdx, setOpenQuestionIdx] = useState(null);
   const navigate = useNavigate();
+  const { analysisData } = useAnalysisContext();
 
   useEffect(() => {
-    const storedResult = sessionStorage.getItem('analysisResult');
-    if (storedResult) {
-      setResult(JSON.parse(storedResult));
+    if (analysisData) {
+      setResult(analysisData);
     } else {
-      navigate('/');
+      const storedResult = sessionStorage.getItem('analysisResult');
+      if (storedResult) {
+        setResult(JSON.parse(storedResult));
+      } else {
+        navigate('/');
+      }
     }
-  }, [navigate]);
+  }, [analysisData, navigate]);
 
   if (!result) {
     return null;
   }
 
   // Single Source of Truth Consumption
-  const coreMatch = result?.core_match || {
+  const coreMatch = result?.coreMatch || result?.core_match || {
     overall_score: 0,
     section_scores: {},
     matched_skills: [],
@@ -40,7 +46,7 @@ const Results = () => {
     summary: 'No analysis available'
   };
 
-  const ats = result?.ats || {
+  const ats = result?.atsAnalysis || result?.ats || {
     ats_score: 0,
     parsing_issues: [],
     detected_sections: [],
@@ -51,14 +57,14 @@ const Results = () => {
   };
 
   const rewrites = result?.rewrites || { rewrites: [] };
-  const gaps = result?.gaps || { readiness_percentage: 0, gap_summary: '', skill_gaps: [], milestones: [] };
-  const coverLetter = result?.cover_letter || { subject_line: '', cover_letter: '', highlights_used: [], tone: '' };
-  const interviewPrep = result?.interview_prep || { technical_questions: [], coding_questions: [], behavioral_questions: [], project_discussion: [] };
+  const gaps = result?.skillGap || result?.roadmap || result?.gaps || { readiness_percentage: 0, gap_summary: '', skill_gaps: [], milestones: [] };
+  const coverLetter = result?.coverLetter || result?.cover_letter || { subject_line: '', cover_letter: '', highlights_used: [], tone: '' };
+  const interviewPrep = result?.interviewPrep || result?.interview_prep || { technical_questions: [], coding_questions: [], behavioral_questions: [], project_discussion: [] };
 
-  // Use precomputed unified profile or generate from backend API response
-  const unifiedProfile = result?.unified_profile || mergeProfile(result, result?.github_analysis || {});
+  // Use precomputed candidate profile or generate from backend API response
+  const unifiedProfile = result?.candidateProfile || result?.unified_profile || mergeProfile(result, result?.githubAnalysis || result?.github_analysis || {});
 
-  const trustScoreData = result?.trust_score || {
+  const trustScoreData = result?.trustAnalysis || result?.trust_score || {
     score: 50,
     category: 'Medium',
     verifiedSkills: unifiedProfile.verifiedSkills?.map(v => v.skill) || [],
@@ -66,7 +72,7 @@ const Results = () => {
     unlocked: true
   };
 
-  const skillSwapMatches = result?.skill_swap || [];
+  const skillSwapMatches = result?.skillSwap?.matches || result?.skill_swap || [];
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Sparkles },

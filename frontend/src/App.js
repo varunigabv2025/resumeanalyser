@@ -5,20 +5,23 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Results from './pages/Results';
 import History from './pages/History';
+import { AnalysisProvider } from './context/AnalysisContext';
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-navy-900">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/results" element={<Results />} />
-          <Route path="/history" element={<History />} />
-        </Routes>
-        <Toaster position="top-right" />
-      </div>
-    </Router>
+    <AnalysisProvider>
+      <Router>
+        <div className="min-h-screen bg-navy-900">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/results" element={<Results />} />
+            <Route path="/history" element={<History />} />
+          </Routes>
+          <Toaster position="top-right" />
+        </div>
+      </Router>
+    </AnalysisProvider>
   );
 }
 
