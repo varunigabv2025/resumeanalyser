@@ -1,5 +1,3 @@
-const profiles = require("./mockProfiles");
-
 function verifySkillWithGithubEvidence(skill, githubAnalysis) {
     if (!githubAnalysis || githubAnalysis.error) {
         return { verified: false, evidence: null };
@@ -44,151 +42,111 @@ function verifySkillWithGithubEvidence(skill, githubAnalysis) {
 
     for (const sk of skills) {
         for (const t of targets) {
-            if (sk === t || sk.includes(t) || t.includes(sk)) {
-                return { verified: true, evidence: `Verified in GitHub repository topics (${sk})` };
+            if (sk === t || sk.includes(t)) {
+                return { verified: true, evidence: `Verified in GitHub repository topics/skills (${sk})` };
             }
         }
     }
 
-    for (const repo of repoNames) {
+    for (const name of repoNames) {
         for (const t of targets) {
-            if (repo.includes(t)) {
-                return { verified: true, evidence: `Code evidence found in repository "${repo}"` };
+            if (t.length > 2 && (name.includes(t) || t.includes(name))) {
+                return { verified: true, evidence: `Verified code evidence found in GitHub repository "${name}"` };
             }
         }
     }
 
     for (const desc of repoDescs) {
         for (const t of targets) {
-            if (desc.includes(t)) {
-                return { verified: true, evidence: `Code evidence documented in repository description` };
+            if (t.length > 2 && desc.includes(t)) {
+                return { verified: true, evidence: `Verified code evidence documented in GitHub repository description` };
             }
         }
     }
 
-    if ((s === 'docker' || s === 'containers') && githubAnalysis.hasDocker) {
-        return { verified: true, evidence: 'Verified via Dockerfile inspection in GitHub repositories' };
+    if (s === 'docker' && githubAnalysis.hasDocker) {
+        return { verified: true, evidence: 'Verified via Dockerfile in GitHub repository root' };
     }
 
-    if ((s === 'ci/cd' || s === 'devops' || s === 'github actions') && githubAnalysis.hasCI) {
+    if (s === 'ci/cd' && githubAnalysis.hasCI) {
         return { verified: true, evidence: 'Verified via .github/workflows CI/CD configuration' };
     }
 
     if (s === 'git' && (githubAnalysis.repoCount > 0 || githubAnalysis.username)) {
-        return { verified: true, evidence: `Verified via active GitHub profile (@${githubAnalysis.username})` };
+        return { verified: true, evidence: `Verified via active GitHub profile (@${githubAnalysis.username}) with ${githubAnalysis.repoCount || 0} repositories` };
     }
 
     return { verified: false, evidence: null };
 }
 
-// Function to calculate multi-dimensional trust score
-function calculateTrustScore(resumeSkills = [], githubSkills = [], options = {}) {
-    const resumeSkillsArray = Array.isArray(resumeSkills) ? resumeSkills : [];
-    const githubAnalysis = options.githubAnalysis || null;
+function calculateTrustScore(resumeSkills = [], githubSkills = [], contextData = {}) {
+    const { githubAnalysis, overallScore = 75, atsScore = 80 } = contextData;
+
+    // Handle optional / missing GitHub profile cleanly
+    if (!githubAnalysis || githubAnalysis.error || (!githubAnalysis.username && githubSkills.length === 0)) {
+        const hasWork = resumeSkills.length > 0;
+        const formattingScore = Math.min(100, Math.max(50, atsScore));
+
+        const trustScore = Math.round((formattingScore * 0.6) + (overallScore * 0.4));
+        const category = trustScore >= 80 ? "High" : trustScore >= 60 ? "Medium" : "Borderline";
+
+        return {
+            score: trustScore,
+            category,
+            verifiedSkills: [],
+            unverifiedSkills: resumeSkills,
+            unlocked: trustScore >= 50,
+            summary: "Trust score derived from ATS formatting and resume completeness (No GitHub profile connected)."
+        };
+    }
 
     const verifiedSkills = [];
     const unverifiedSkills = [];
 
-    if (githubAnalysis && !githubAnalysis.error) {
-        resumeSkillsArray.forEach(skill => {
-            const check = verifySkillWithGithubEvidence(skill, githubAnalysis);
-            if (check.verified) {
-                verifiedSkills.push(skill);
-            } else {
-                unverifiedSkills.push(skill);
-            }
-        });
-    } else {
-        resumeSkillsArray.forEach(skill => unverifiedSkills.push(skill));
+    (resumeSkills || []).forEach(skill => {
+        const check = verifySkillWithGithubEvidence(skill, githubAnalysis);
+        if (check.verified) {
+            verifiedSkills.push(skill);
+        } else {
+            unverifiedSkills.push(skill);
+        }
+    });
+
+    const totalClaims = resumeSkills.length;
+    const verificationRatio = totalClaims > 0 ? (verifiedSkills.length / totalClaims) : 0;
+    
+    let baseScore = 50; 
+    let verificationPoints = Math.round(verificationRatio * 35); 
+    let repoActivityBonus = (githubAnalysis.repoCount || 0) > 0 ? 10 : 0;
+    if (githubAnalysis.hasDocker) repoActivityBonus += 2;
+    if (githubAnalysis.hasCI) repoActivityBonus += 3;
+
+    let finalScore = Math.min(100, Math.max(20, baseScore + verificationPoints + Math.min(15, repoActivityBonus)));
+
+    if (totalClaims > 0 && verifiedSkills.length === 0 && (githubAnalysis.repoCount || 0) > 0) {
+        finalScore = Math.min(finalScore, 48);
     }
 
-    // 1. Verification Ratio (0-100)
-    let verificationRatio = 50;
-    if (githubAnalysis && !githubAnalysis.error) {
-        verificationRatio = resumeSkillsArray.length > 0
-            ? Math.round((verifiedSkills.length / resumeSkillsArray.length) * 100)
-            : 70;
-    } else {
-        verificationRatio = 60; // Neutral baseline when URL omitted
-    }
+    let category = "Low";
+    if (finalScore >= 80) category = "High";
+    else if (finalScore >= 65) category = "Medium";
+    else if (finalScore >= 50) category = "Borderline";
 
-    // 2. Repository Quality & Activity Bonus (0-100)
-    let repoQualityScore = 50;
-    if (githubAnalysis && !githubAnalysis.error) {
-        let bonus = 0;
-        if (githubAnalysis.hasDocker) bonus += 25;
-        if (githubAnalysis.hasCI) bonus += 25;
-        if (githubAnalysis.repoCount >= 5) bonus += 25;
-        if (githubAnalysis.lastCommitDate) bonus += 25;
-        repoQualityScore = Math.min(100, Math.max(30, bonus));
-    } else if (verifiedSkills.length > 0) {
-        repoQualityScore = 75;
-    }
-
-    // 3. ATS & Resume Quality Score (0-100)
-    const atsScore = Number(options.atsScore) || 75;
-    const overallScore = Number(options.overallScore) || 75;
-    const resumeQualityScore = Math.round((atsScore + overallScore) / 2);
-
-    // Aggregate Multi-dimensional Trust Score Formula
-    const finalScore = Math.round(
-        (verificationRatio * 0.45) +
-        (repoQualityScore * 0.25) +
-        (resumeQualityScore * 0.30)
-    );
-
-    const score = Math.max(0, Math.min(100, finalScore));
-
-    let category = 'Low';
-    if (score >= 80) category = 'High';
-    else if (score >= 60) category = 'Medium';
-    else if (score >= 40) category = 'Borderline';
+    const unlocked = finalScore >= 50;
 
     return {
-        score,
+        score: finalScore,
+        category,
         verifiedSkills,
         unverifiedSkills,
-        category,
-        verificationRatio,
-        repoQualityScore,
-        resumeQualityScore,
-        unlocked: score >= 50
+        unlocked,
+        summary: unlocked 
+            ? `Verified ${verifiedSkills.length} of ${totalClaims} resume skill claims against GitHub code repositories.`
+            : `Trust score is below 50% threshold. Only ${verifiedSkills.length} of ${totalClaims} resume skill claims were verified in code.`
     };
-}
-
-// Function to verify every profile
-function verifyProfiles() {
-    console.log("========== TRUST SCORE REPORT ==========\n");
-
-    profiles.forEach(profile => {
-        const name = profile.resumeAnalysis?.user?.name || 'Developer';
-        const resumeSkills = profile.resumeAnalysis?.core_match?.matched_skills || [];
-
-        const result = calculateTrustScore(resumeSkills, [], {
-            githubAnalysis: profile.githubAnalysis,
-            overallScore: profile.resumeAnalysis?.core_match?.overall_score,
-            atsScore: profile.resumeAnalysis?.ats?.ats_score
-        });
-
-        console.log("----------------------------------------");
-        console.log(`Name: ${name}`);
-        console.log(`Trust Score: ${result.score}% (${result.category})`);
-        console.log(`Verified Skills: ${result.verifiedSkills.join(", ")}`);
-        console.log(`SkillSwap Status: ${result.unlocked ? "✅ Unlocked" : "❌ Locked"}`);
-        console.log();
-    });
 }
 
 module.exports = {
     calculateTrustScore,
-    verifyProfiles,
     verifySkillWithGithubEvidence
 };
-
-module.exports.calculateTrustScore = calculateTrustScore;
-module.exports.verifyProfiles = verifyProfiles;
-module.exports.verifySkillWithGithubEvidence = verifySkillWithGithubEvidence;
-
-if (require.main === module) {
-    verifyProfiles();
-}
