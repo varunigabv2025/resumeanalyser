@@ -51,16 +51,16 @@ async function analyzeCandidate({ resumeBuffer, mimeType, jobDescription, github
     const username = githubUrl.trim().split('/').filter(Boolean).pop();
     if (username) {
       try {
-        const ghResult = await analyzeGithubProfile(username, []);
+        const ghResult = await analyzeGithubProfile(githubUrl, []);
         if (ghResult.error) {
           warnings.push(`GitHub analysis notice: ${ghResult.error}`);
-          githubAnalysis = { username, error: ghResult.error, skills: [], repos: [] };
+          githubAnalysis = { username, error: ghResult.error, skills: [], repos: [], verifiedSkills: [] };
         } else {
           githubAnalysis = ghResult;
         }
       } catch (ghErr) {
         warnings.push(`GitHub API error: ${ghErr.message}`);
-        githubAnalysis = { username, error: ghErr.message, skills: [], repos: [] };
+        githubAnalysis = { username, error: ghErr.message, skills: [], repos: [], verifiedSkills: [] };
       }
     }
   }
@@ -95,8 +95,8 @@ async function analyzeCandidate({ resumeBuffer, mimeType, jobDescription, github
     missing: candidateProfile.missingSkills
   };
 
-  // 5. Unified Trust Score Calculation
-  const trustAnalysis = calculateTrustScore(candidateProfile.matchedSkills, githubSkills, {
+  // 5. Unified Trust Score Calculation (FIRED WITH VALID rawGithubSkills SOURCE)
+  const trustAnalysis = calculateTrustScore(candidateProfile.matchedSkills, rawGithubSkills, {
     githubAnalysis,
     overallScore: aiResults.core_match?.overall_score,
     atsScore: aiResults.ats?.ats_score
@@ -118,6 +118,17 @@ async function analyzeCandidate({ resumeBuffer, mimeType, jobDescription, github
   }
 
   const mergedLegacyProfile = mergeProfile(aiResults, githubAnalysis);
+
+  // Debug Logging
+  console.log('[DEBUG Orchestrator] GitHub Username:', githubAnalysis?.username);
+  console.log('[DEBUG Orchestrator] Repository Count:', githubAnalysis?.repoCount);
+  console.log('[DEBUG Orchestrator] Repository Names:', githubAnalysis?.repos?.map(r => r.name));
+  console.log('[DEBUG Orchestrator] GitHub Extracted Skills:', rawGithubSkills);
+  console.log('[DEBUG Orchestrator] Resume Extracted Skills:', rawResumeSkills);
+  console.log('[DEBUG Orchestrator] Matched Skills:', candidateProfile.matchedSkills);
+  console.log('[DEBUG Orchestrator] Missing Skills:', candidateProfile.missingSkills);
+  console.log('[DEBUG Orchestrator] Verified Skills:', candidateProfile.verifiedSkills);
+  console.log('[DEBUG Orchestrator] Trust Score Inputs:', { matched: candidateProfile.matchedSkills, github: rawGithubSkills });
 
   // Return Master CandidateProfile Response Object
   return {
